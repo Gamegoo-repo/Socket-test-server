@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Socket.IO Chat</title>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+    <form id="form" action="">
+      <input id="input" autocomplete="off" />
+      <button>Send</button>
+    </form>
+    <input id="userId" type="number" placeholder="Enter your ID" />
+    <button id="loginButton">Login</button>
+    <button id="authButton">Connect</button>
+    <button id="getSocketListButton">get socket list on express</button>
+    <ul id="onlineFriends"></ul>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      let socket;
+      const form = document.getElementById("form");
+      const input = document.getElementById("input");
+      const userIdInput = document.getElementById("userId");
+      const loginButton = document.getElementById("loginButton");
+      const authButton = document.getElementById("authButton");
+      const getSocketListButton = document.getElementById("getSocketListButton");
+      const onlineFriends = document.getElementById("onlineFriends");
+
+      let jwtToken = "";
+
+      loginButton.addEventListener("click", () => {
+        const userId = userIdInput.value;
+        if (!userId) {
+          alert("Please enter your ID.");
+          return;
+        }
+
+        fetch("http://localhost:8080/v1/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: userId,
+            loginType: "KAKAO",
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.isSuccess && data.result.accessToken) {
+              jwtToken = data.result.accessToken;
+              alert("Login successful! Token received.");
+            } else {
+              alert("Login failed.");
+            }
+          })
+          .catch((error) => console.error("Error:", error));
+      });
+
+      authButton.addEventListener("click", () => {
+        if (!jwtToken) {
+          alert("Please login first.");
+          return;
+        }
+
+        fetch("/auth", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${jwtToken}`,
+          },
+          body: JSON.stringify({ token: jwtToken }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.authenticated) {
+              socket = io({
+                extraHeaders: {
+                  Authorization: `Bearer ${jwtToken}`,
+                },
+              });
+
+              form.addEventListener("submit", (e) => {
+                e.preventDefault();
+                if (input.value) {
+                  socket.emit("chat message", input.value);
+                  input.value = "";
+                }
+              });
+
+              socket.on("chat message", (msg) => {
+                const item = document.createElement("li");
+                item.textContent = msg;
+                document.getElementById("messages").appendChild(item);
+              });
+
+              getSocketListButton.addEventListener("click", (e) => {
+                //e.preventDefault();
+                socket.emit("printSocketIds");
+              });
+
+              // "friend-online" 이벤트 리스너 추가
+              socket.on("friend-online", (memberId) => {
+                const item = document.createElement("li");
+                item.textContent = `Friend ID: ${memberId} is online`;
+                onlineFriends.appendChild(item);
+              });
+            } else {
+              alert("Authentication failed");
+            }
+          })
+          .catch((error) => console.error("Error:", error));
+      });
+    </script>
+  </body>
+</html>
