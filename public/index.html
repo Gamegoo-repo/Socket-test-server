@@ -13,7 +13,6 @@
     </form>
     <input id="userId" type="number" placeholder="Enter your ID" />
     <button id="loginButton">Login</button>
-    <button id="authButton">Connect</button>
     <button id="getSocketListButton">get socket list on express</button>
     <ul id="onlineFriends"></ul>
 
@@ -24,11 +23,46 @@
       const input = document.getElementById("input");
       const userIdInput = document.getElementById("userId");
       const loginButton = document.getElementById("loginButton");
-      const authButton = document.getElementById("authButton");
       const getSocketListButton = document.getElementById("getSocketListButton");
       const onlineFriends = document.getElementById("onlineFriends");
 
-      let jwtToken = "";
+      function connectSocket(jwtToken = null) {
+        const options = jwtToken ? { extraHeaders: { Authorization: `Bearer ${jwtToken}` } } : {}; // jwt토큰이 있으면 담아 보내고, 없으면 빼고 보낸다
+        socket = io(options);
+
+        socket.on("connect", () => {
+          console.log("Connected to server. Socket ID:", socket.id);
+          alert("Connected to server. Socket ID: " + socket.id);
+        });
+
+        setupSocketListeners();
+      }
+
+      function setupSocketListeners() {
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          if (input.value) {
+            socket.emit("chat message", input.value);
+            input.value = "";
+          }
+        });
+
+        socket.on("chat message", (msg) => {
+          const item = document.createElement("li");
+          item.textContent = msg;
+          document.getElementById("messages").appendChild(item);
+        });
+
+        getSocketListButton.addEventListener("click", () => {
+          socket.emit("printSocketIds");
+        });
+
+        socket.on("friend-online", (memberId) => {
+          const item = document.createElement("li");
+          item.textContent = `Friend ID: ${memberId} is online`;
+          onlineFriends.appendChild(item);
+        });
+      }
 
       loginButton.addEventListener("click", () => {
         const userId = userIdInput.value;
@@ -38,6 +72,7 @@
         }
 
         fetch("http://localhost:8080/v1/auth/login", {
+          // API server로부터 jwt토큰을 받아온다
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -50,8 +85,30 @@
           .then((response) => response.json())
           .then((data) => {
             if (data.isSuccess && data.result.accessToken) {
-              jwtToken = data.result.accessToken;
+              const jwtToken = data.result.accessToken;
+              localStorage.setItem("jwtToken", jwtToken); // 받아온 jwt토큰을 localStorage에 저장한다
               alert("Login successful! Token received.");
+              console.log("Using existing socket. Socket ID:", socket.id);
+
+              //
+              // Socket server로 해당 클라이언트가 로그인 했음을 알리기 위한 요청 보내기
+              fetch("/login", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${jwtToken}`, // jwtToken을 Authorization 헤더에 추가
+                  "Socket-Id": socket.id, // 클라이언트의 소켓 ID를 Socket-Id 헤더에 추가
+                },
+                // body: JSON.stringify({
+                //   // 추가적인 데이터가 필요하다면 여기에 작성
+                // }),
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  // 추가적인 처리 로직 작성
+                  console.log(data);
+                })
+                .catch((error) => console.error("Error:", error));
             } else {
               alert("Login failed.");
             }
@@ -59,59 +116,10 @@
           .catch((error) => console.error("Error:", error));
       });
 
-      authButton.addEventListener("click", () => {
-        if (!jwtToken) {
-          alert("Please login first.");
-          return;
-        }
-
-        fetch("/auth", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${jwtToken}`,
-          },
-          body: JSON.stringify({ token: jwtToken }),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.authenticated) {
-              socket = io({
-                extraHeaders: {
-                  Authorization: `Bearer ${jwtToken}`,
-                },
-              });
-
-              form.addEventListener("submit", (e) => {
-                e.preventDefault();
-                if (input.value) {
-                  socket.emit("chat message", input.value);
-                  input.value = "";
-                }
-              });
-
-              socket.on("chat message", (msg) => {
-                const item = document.createElement("li");
-                item.textContent = msg;
-                document.getElementById("messages").appendChild(item);
-              });
-
-              getSocketListButton.addEventListener("click", (e) => {
-                //e.preventDefault();
-                socket.emit("printSocketIds");
-              });
-
-              // "friend-online" 이벤트 리스너 추가
-              socket.on("friend-online", (memberId) => {
-                const item = document.createElement("li");
-                item.textContent = `Friend ID: ${memberId} is online`;
-                onlineFriends.appendChild(item);
-              });
-            } else {
-              alert("Authentication failed");
-            }
-          })
-          .catch((error) => console.error("Error:", error));
+      // 페이지 로드 시 Socket.IO 연결 시도
+      window.addEventListener("load", () => {
+        const jwtToken = localStorage.getItem("jwtToken");
+        connectSocket(jwtToken);
       });
     </script>
   </body>
