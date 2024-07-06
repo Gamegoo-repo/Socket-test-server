@@ -32,16 +32,15 @@ function login(io) {
       // "Socket-Id" 헤더에서 클라이언트 소켓 ID 추출
       const socketId = req.headers["socket-id"];
 
-      // Socket.IO를 통해 클라이언트 소켓을 찾고 memberId를 추가
+      // Socket.IO를 통해 클라이언트 소켓을 찾고 memberId, token을 추가
       const socket = io.sockets.sockets.get(socketId);
       if (socket) {
-        socket.memberId = memberId; // 해당 소켓에 memberId 추가
+        socket.memberId = memberId; // 해당 소켓 객체에 memberId 추가
+        socket.token = jwtToken; // 해당 소켓 객체에 token 추가
         console.log(`Added memberId ${memberId} to socket ${socketId}`);
       } else {
         console.error(`Socket ${socketId} not found or disconnected.`);
       }
-
-      // 추가적인 로직 수행 및 응답 처리
 
       // 초기화 함수들 호출
       initChat(socket, io);

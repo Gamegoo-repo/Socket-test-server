@@ -31,8 +31,8 @@ function initializeSocket(server) {
   io.on("connection", (socket) => {
     console.log("a user connected, memberId:", socket.memberId, "socketId:", socket.id);
 
-    // 헤더에서 JWT 토큰 추출
-    const token = socket.handshake.headers["authorization"]?.split(" ")[1];
+    // socket auth에서 JWT 토큰 추출
+    const token = socket.handshake.auth.token;
 
     if (token) {
       // 토큰 검증
@@ -41,7 +41,8 @@ function initializeSocket(server) {
           console.log("Invalid token");
           // socket.disconnect();
         } else {
-          socket.memberId = decoded.memberId; // 토큰에 있는 정보를 소켓에 저장
+          socket.memberId = decoded.memberId; // 해당 소켓 객체에 memberId 추가
+          socket.token = token; // 해당 소켓 객체에 token 추가
           console.log("a user connected, memberId:", socket.memberId, "socketId:", socket.id);
 
           // 초기화 함수들 호출

@@ -5,7 +5,7 @@ async function fetchFriends(socket) {
   try {
     const response = await axios.get("http://localhost:8080/v1/member/friends", {
       headers: {
-        Authorization: `Bearer ${socket.handshake.headers["authorization"].split(" ")[1]}`,
+        Authorization: `Bearer ${socket.token}`,
       },
     });
     if (response.data.isSuccess) {

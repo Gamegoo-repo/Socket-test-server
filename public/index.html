@@ -27,7 +27,9 @@
       const onlineFriends = document.getElementById("onlineFriends");
 
       function connectSocket(jwtToken = null) {
-        const options = jwtToken ? { extraHeaders: { Authorization: `Bearer ${jwtToken}` } } : {}; // jwt토큰이 있으면 담아 보내고, 없으면 빼고 보낸다
+        // const options = jwtToken ? { extraHeaders: { Authorization: `Bearer ${jwtToken}` } } : {}; // jwt토큰이 있으면 담아 보내고, 없으면 빼고 보낸다
+        const options = jwtToken ? { auth: { token: jwtToken } } : {}; // jwt토큰이 있으면 담아 보내고, 없으면 빼고 보낸다
+
         socket = io(options);
 
         socket.on("connect", () => {
