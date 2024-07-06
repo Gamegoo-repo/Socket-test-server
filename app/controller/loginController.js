@@ -6,6 +6,8 @@ const initAlarm = require("../../socket/handlers/alarm/alarmInit");
 const initMatching = require("../../socket/handlers/matching/matchingInit");
 const initFriend = require("../../socket/handlers/friend/friendInit");
 
+const { successResponse, failResponse } = require("../common/responseFormatter");
+
 function login(io) {
   return (req, res) => {
     // "Authorization" 헤더에서 JWT 토큰 추출
@@ -17,14 +19,14 @@ function login(io) {
 
     // jwt token 검증
     if (!jwtToken) {
-      return res.status(401).json({ authenticated: false });
+      return res.status(401).json(failResponse("COMMON401", "JWT token not provided"));
     }
 
     // JWT 토큰을 검증하고 memberId를 추출
     jwt.verify(jwtToken, jwtSecret, (err, decoded) => {
       if (err) {
         console.error("Error verifying token:", err);
-        return res.status(401).json({ authenticated: false });
+        return res.status(401).json(failResponse("COMMON401", "JWT token verification failed"));
       }
 
       const memberId = decoded.memberId; // JWT 토큰에서 memberId 추출
@@ -48,7 +50,7 @@ function login(io) {
       initMatching(socket, io);
       initFriend(socket, io);
 
-      res.status(200).json({ authenticated: true });
+      res.status(200).json(successResponse("socket 설정 성공"));
     });
   };
 }
