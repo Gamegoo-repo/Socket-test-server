@@ -10,24 +10,6 @@ const initFriend = require("./handlers/friend/friendInit");
 function initializeSocket(server) {
   const io = socketIo(server);
 
-  // //socket 요청마다 jwt 토큰을 검사하는 middleware
-  // io.use((socket, next) => {
-  //   const token = socket.handshake.headers["authorization"];
-  //   if (token) {
-  //     jwt.verify(token.split(" ")[1], jwtSecret, (err, decoded) => {
-  //       if (err) {
-  //         return next(new Error("Authentication error"));
-  //       }
-  //       socket.decoded = decoded;
-  //       socket.memberId = decoded.memberId;
-
-  //       next();
-  //     });
-  //   } else {
-  //     next(new Error("Authentication error"));
-  //   }
-  // });
-
   io.on("connection", (socket) => {
     console.log("a user connected, memberId:", socket.memberId, "socketId:", socket.id);
 
