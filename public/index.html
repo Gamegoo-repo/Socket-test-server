@@ -6,14 +6,15 @@
     <title>Socket.IO Chat</title>
   </head>
   <body>
+    <input id="userId" type="number" placeholder="Enter your ID" />
+    <button id="loginButton">Login</button>
+    <button id="getSocketListButton">get socket list on express</button>
+    <p id="loginStatus">You are not Login User</p>
     <ul id="messages"></ul>
     <form id="form" action="">
       <input id="input" autocomplete="off" />
       <button>Send</button>
     </form>
-    <input id="userId" type="number" placeholder="Enter your ID" />
-    <button id="loginButton">Login</button>
-    <button id="getSocketListButton">get socket list on express</button>
     <ul id="onlineFriends"></ul>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -63,6 +64,11 @@
           const item = document.createElement("li");
           item.textContent = `Friend ID: ${memberId} is online`;
           onlineFriends.appendChild(item);
+        });
+
+        // "member-info" 이벤트 처리
+        socket.on("member-info", (memberId) => {
+          loginStatus.textContent = "You are Login User, member Id: " + memberId;
         });
       }
 

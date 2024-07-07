@@ -44,6 +44,8 @@ function login(io) {
         console.error(`Socket ${socketId} not found or disconnected.`);
       }
 
+      socket.emit("member-info", socket.memberId);
+
       // 초기화 함수들 호출
       initChat(socket, io);
       initAlarm(socket, io);

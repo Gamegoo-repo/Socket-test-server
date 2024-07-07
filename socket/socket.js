@@ -27,6 +27,8 @@ function initializeSocket(server) {
           socket.token = token; // 해당 소켓 객체에 token 추가
           console.log("a user connected, memberId:", socket.memberId, "socketId:", socket.id);
 
+          socket.emit("member-info", socket.memberId);
+
           // 초기화 함수들 호출
           initChat(socket, io);
           initAlarm(socket, io);
