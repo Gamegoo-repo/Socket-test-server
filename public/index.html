@@ -3,19 +3,94 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Socket.IO Chat</title>
+    <title>Socket 서버 테스트</title>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: Arial, sans-serif;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh; /* 100% of the viewport height */
+      }
+      .top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #333;
+        color: white;
+        padding: 10px;
+      }
+      .top-bar input,
+      .top-bar button,
+      .top-bar p {
+        margin: 0 10px;
+      }
+      .content {
+        display: flex;
+        flex: 1;
+      }
+      .column {
+        flex: 1;
+        padding: 20px;
+        border: 1px solid #ddd;
+        display: flex;
+        flex-direction: column;
+      }
+      .column:nth-child(odd) {
+        background-color: #f9f9f9;
+      }
+      .column:nth-child(even) {
+        background-color: #e9e9e9;
+      }
+      .chatroom {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      .messages {
+        flex: 1;
+        overflow-y: auto;
+      }
+      .chat-form {
+        display: flex;
+      }
+      .chat-form input {
+        flex: 1;
+      }
+    </style>
   </head>
   <body>
-    <input id="userId" type="number" placeholder="Enter your ID" />
-    <button id="loginButton">Login</button>
-    <button id="getSocketListButton">get socket list on express</button>
-    <p id="loginStatus">You are not Login User</p>
-    <ul id="messages"></ul>
-    <form id="form" action="">
-      <input id="input" autocomplete="off" />
-      <button>Send</button>
-    </form>
-    <ul id="onlineFriends"></ul>
+    <div class="container">
+      <div class="top-bar">
+        <div>
+          <input id="userId" type="number" placeholder="Enter your ID" />
+          <button id="loginButton">Login</button>
+        </div>
+        <p id="loginStatus">You are not Login User</p>
+      </div>
+      <div class="content">
+        <div class="column">
+          <h2>친구 목록</h2>
+          <ul id="onlineFriends"></ul>
+        </div>
+        <div class="column">
+          <h2>채팅방 목록</h2>
+        </div>
+        <div class="column chatroom">
+          <h2>채팅방</h2>
+          <ul id="messages" class="messages"></ul>
+          <form id="form" class="chat-form" action="">
+            <input id="input" autocomplete="off" />
+            <button>Send</button>
+          </form>
+        </div>
+      </div>
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -24,12 +99,11 @@
       const input = document.getElementById("input");
       const userIdInput = document.getElementById("userId");
       const loginButton = document.getElementById("loginButton");
-      const getSocketListButton = document.getElementById("getSocketListButton");
       const onlineFriends = document.getElementById("onlineFriends");
+      const loginStatus = document.getElementById("loginStatus");
 
       function connectSocket(jwtToken = null) {
-        // const options = jwtToken ? { extraHeaders: { Authorization: `Bearer ${jwtToken}` } } : {}; // jwt토큰이 있으면 담아 보내고, 없으면 빼고 보낸다
-        const options = jwtToken ? { auth: { token: jwtToken } } : {}; // jwt토큰이 있으면 담아 보내고, 없으면 빼고 보낸다
+        const options = jwtToken ? { auth: { token: jwtToken } } : {};
 
         socket = io(options);
 
@@ -56,17 +130,12 @@
           document.getElementById("messages").appendChild(item);
         });
 
-        getSocketListButton.addEventListener("click", () => {
-          socket.emit("printSocketIds");
-        });
-
         socket.on("friend-online", (memberId) => {
           const item = document.createElement("li");
           item.textContent = `Friend ID: ${memberId} is online`;
           onlineFriends.appendChild(item);
         });
 
-        // "member-info" 이벤트 처리
         socket.on("member-info", (memberId) => {
           loginStatus.textContent = "You are Login User, member Id: " + memberId;
         });
@@ -80,7 +149,6 @@
         }
 
         fetch("http://localhost:8080/v1/auth/login", {
-          // API server로부터 jwt토큰을 받아온다
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -94,26 +162,20 @@
           .then((data) => {
             if (data.isSuccess && data.result.accessToken) {
               const jwtToken = data.result.accessToken;
-              localStorage.setItem("jwtToken", jwtToken); // 받아온 jwt토큰을 localStorage에 저장한다
+              localStorage.setItem("jwtToken", jwtToken);
               alert("Login successful! Token received.");
               console.log("Using existing socket. Socket ID:", socket.id);
 
-              //
-              // Socket server로 해당 클라이언트가 로그인 했음을 알리기 위한 요청 보내기
               fetch("/login", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  Authorization: `Bearer ${jwtToken}`, // jwtToken을 Authorization 헤더에 추가
-                  "Socket-Id": socket.id, // 클라이언트의 소켓 ID를 Socket-Id 헤더에 추가
+                  Authorization: `Bearer ${jwtToken}`,
+                  "Socket-Id": socket.id,
                 },
-                // body: JSON.stringify({
-                //   // 추가적인 데이터가 필요하다면 여기에 작성
-                // }),
               })
                 .then((response) => response.json())
                 .then((data) => {
-                  // 추가적인 처리 로직 작성
                   console.log(data);
                 })
                 .catch((error) => console.error("Error:", error));
@@ -124,7 +186,6 @@
           .catch((error) => console.error("Error:", error));
       });
 
-      // 페이지 로드 시 Socket.IO 연결 시도
       window.addEventListener("load", () => {
         const jwtToken = localStorage.getItem("jwtToken");
         connectSocket(jwtToken);
