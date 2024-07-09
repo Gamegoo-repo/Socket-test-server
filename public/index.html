@@ -63,6 +63,23 @@
       .chat-form input {
         flex: 1;
       }
+      .chatroom-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+      }
+      .chatroom-item img {
+        border-radius: 50%;
+      }
+      .chatroom-info {
+        flex: 1;
+        margin-left: 10px;
+      }
+      .chatroom-info p {
+        margin: 0;
+      }
     </style>
   </head>
   <body>
@@ -205,24 +222,27 @@
           .then((response) => response.json())
           .then((data) => {
             if (data.isSuccess && data.result) {
-              // 기존 chatroomElement 초기화
+              // Clear existing chatroom elements
               const chatroomListElement = document.getElementById("chatroomList");
               chatroomListElement.innerHTML = "";
 
-              // 응답 데이터 돌면서 chatroom 목록 요소 생성
+              // Loop through response data to create chatroom list elements
               data.result.forEach((chatroom) => {
                 const li = document.createElement("li");
+                li.classList.add("chatroom-item");
                 li.innerHTML = `
-                <div>
-                  <img src="${chatroom.targetMemberImg}" alt="Profile Image" width="30" height="30">
-                  <span>${chatroom.targetMemberName}</span>
-                </div>
-                <div>
-                  <p>${chatroom.lastMsg}</p>
-                  <p>Last Message Time: ${new Date(chatroom.lastMsgTime).toLocaleString()}</p>
-                  <p>Unread Messages: ${chatroom.notReadMsgCnt}</p>
-                </div>
-              `;
+                                <div>
+                                    <img src="${chatroom.targetMemberImg}" alt="Profile Image" width="30" height="30">
+                                </div>
+                                <div class="chatroom-info">
+                                    <span>${chatroom.targetMemberName}</span>
+                                    <p>${chatroom.lastMsg}</p>
+                                </div>
+                                <div>
+                                    <p>${new Date(chatroom.lastMsgTime).toLocaleString()}</p>
+                                    <p>New: ${chatroom.notReadMsgCnt}</p>
+                                </div>
+                            `;
                 chatroomListElement.appendChild(li);
               });
             } else {
