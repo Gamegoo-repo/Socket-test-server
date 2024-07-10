@@ -1,7 +1,7 @@
 const { fetchFriends } = require("../../utils/friend/fetch");
 const { emitFriendOnline } = require("../../utils/friend/event");
 
-function handleFriendEvents(socket, io) {
+function initializeFriend(socket, io) {
   let friendIdList = [];
 
   fetchFriends(socket)
@@ -14,4 +14,4 @@ function handleFriendEvents(socket, io) {
     });
 }
 
-module.exports = { handleFriendEvents };
+module.exports = { initializeFriend };
