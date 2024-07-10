@@ -208,6 +208,17 @@
           loginStatus.textContent = "You are Login User, member Id: " + memberId;
         });
 
+        socket.on("set-friend-list", (response) => {
+          const onlineFriendMemberIdList = response.data.onlineFriendMemberIdList;
+
+          // 로그 확인
+          console.log("set-friend-list event에 대한 listener가 작동합니다.");
+          console.log("Online Friend Member ID List:", onlineFriendMemberIdList);
+
+          // localStorage에 데이터 저장
+          localStorage.setItem("onlineFriendMemberIdList", JSON.stringify(onlineFriendMemberIdList));
+        });
+
         socket.on("unread-count-update", (data) => {
           console.log(`New count for chatroom ${data.chatroomUuid}: ${data.newCount}`);
           const chatroomItem = document.querySelector(`.chatroom-item[data-chatroom-uuid="${data.chatroomUuid}"]`);
