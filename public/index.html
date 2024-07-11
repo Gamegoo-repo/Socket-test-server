@@ -127,6 +127,21 @@
         font-size: 0.8em;
         color: gray;
       }
+      .online {
+        color: red;
+        font-size: 14px; /* 텍스트 크기 */
+        font-weight: 300; /* 굵기 (400이 기본값, 더 얇게 하려면 숫자를 낮추세요) */
+        font-style: italic; /* 이탤릭체 */
+        padding-left: 5px; /* 왼쪽 여백 */
+      }
+
+      .offline {
+        color: gray;
+        font-size: 14px; /* 텍스트 크기 */
+        font-weight: 300; /* 굵기 (400이 기본값, 더 얇게 하려면 숫자를 낮추세요) */
+        font-style: italic; /* 이탤릭체 */
+        padding-left: 5px; /* 왼쪽 여백 */
+      }
     </style>
   </head>
   <body>
@@ -360,10 +375,24 @@
 
               // Update chatroom header
               const chatroomHeader = document.querySelector(".column.chatroom h2");
-              chatroomHeader.innerHTML = `
-                <img src="${targetMemberData.memberProfileImg}" alt="Profile Image" width="30" height="30" style="vertical-align: middle;">
-                ${targetMemberData.name}
-              `;
+
+              // Get onlineFriendMemberIdList from localStorage
+              const onlineFriendMemberIdList = JSON.parse(localStorage.getItem("onlineFriendMemberIdList")) || [];
+
+              // Check if targetMemberData.memberId exists in onlineFriendMemberIdList
+              const isOnline = onlineFriendMemberIdList.includes(targetMemberData.memberId);
+
+              // Determine status text based on online status
+              const statusText = isOnline ? "online" : "offline";
+
+              // Create status element with appropriate class
+              const statusElement = document.createElement("span");
+              statusElement.textContent = `(${statusText})`;
+              statusElement.classList.add(isOnline ? "online" : "offline");
+
+              // Update chatroom header with profile image, name, and status element
+              chatroomHeader.innerHTML = `<img src="${targetMemberData.memberProfileImg}" alt="Profile Image" width="30" height="30" style="vertical-align: middle;">${targetMemberData.name}`;
+              chatroomHeader.appendChild(statusElement);
 
               // Fetch chatroom messages
               fetch(`http://localhost:8080/v1/chat/${chatroomUuid}/messages?page=1`, {
