@@ -185,6 +185,8 @@
       const loginStatus = document.getElementById("loginStatus");
       const fetchChatroomBtn = document.getElementById("fetchChatroomsButton");
 
+      let onlineFriendMemberIdList = [];
+
       function connectSocket(jwtToken = null) {
         const options = jwtToken ? { auth: { token: jwtToken } } : {};
 
@@ -224,14 +226,11 @@
         });
 
         socket.on("set-friend-list", (response) => {
-          const onlineFriendMemberIdList = response.data.onlineFriendMemberIdList;
+          onlineFriendMemberIdList = response.data.onlineFriendMemberIdList;
 
           // 로그 확인
           console.log("set-friend-list event에 대한 listener가 작동합니다.");
           console.log("Online Friend Member ID List:", onlineFriendMemberIdList);
-
-          // localStorage에 데이터 저장
-          localStorage.setItem("onlineFriendMemberIdList", JSON.stringify(onlineFriendMemberIdList));
         });
 
         socket.on("unread-count-update", (response) => {
@@ -376,13 +375,8 @@
               // Update chatroom header
               const chatroomHeader = document.querySelector(".column.chatroom h2");
 
-              // Get onlineFriendMemberIdList from localStorage
-              const onlineFriendMemberIdList = JSON.parse(localStorage.getItem("onlineFriendMemberIdList")) || [];
-
-              // Check if targetMemberData.memberId exists in onlineFriendMemberIdList
-              const isOnline = onlineFriendMemberIdList.includes(targetMemberData.memberId);
-
               // Determine status text based on online status
+              const isOnline = onlineFriendMemberIdList.includes(targetMemberData.memberId);
               const statusText = isOnline ? "online" : "offline";
 
               // Create status element with appropriate class
