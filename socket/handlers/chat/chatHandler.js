@@ -1,6 +1,8 @@
-function handleChatEvents(socket, io) {
+const formatResponse = require("../../utils/common/responseFormatter");
+
+function setupChatListeners(socket, io) {
   socket.on("chat message", (msg) => {
-    io.emit("chat message", msg);
+    io.emit("chat message", formatResponse(true, "success", { msg: msg }));
   });
 
   socket.on("printSocketIds", () => {
@@ -16,4 +18,4 @@ function printConnectedSocketIds(io) {
   });
 }
 
-module.exports = { handleChatEvents };
+module.exports = { setupChatListeners };

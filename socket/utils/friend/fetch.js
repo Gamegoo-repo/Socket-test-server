@@ -1,11 +1,11 @@
 const axios = require("axios");
 
-// 친구 정보를 가져오는 함수
+// 8080서버로 해당 회원의 친구목록 조회 api를 실행
 async function fetchFriends(socket) {
   try {
     const response = await axios.get("http://localhost:8080/v1/member/friends", {
       headers: {
-        Authorization: `Bearer ${socket.handshake.headers["authorization"].split(" ")[1]}`,
+        Authorization: `Bearer ${socket.token}`,
       },
     });
     if (response.data.isSuccess) {

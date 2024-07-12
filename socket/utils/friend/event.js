@@ -1,16 +1,28 @@
-// 친구들에게 온라인 상태를 알리는 함수
-function notifyFriendsOnline(socket, io, friendIdList) {
-  console.log(`== member ID: ${socket.memberId}, friend's socket ID list START ==`);
-  const connectedSockets = io.sockets.sockets;
-  connectedSockets.forEach((connSocket, key) => {
-    if (friendIdList.includes(connSocket.memberId)) {
-      console.log(`MemberId: ${connSocket.memberId}, Key: ${key}`);
-      io.to(key).emit("friend-online", socket.memberId);
-    }
+const formatResponse = require("../common/responseFormatter");
+
+/**
+ * 친구 소켓에게 내가 온라인 상태를 알리는 메소드
+ * @param {*} io
+ * @param {*} friendSocketList
+ */
+function emitFriendOnline(io, friendSocketList) {
+  friendSocketList.forEach((friendSocket) => {
+    // 친구 소켓에게 friend-online emit
+    io.to(friendSocket.socketId).emit("friend-online", formatResponse(true, "friend-online", { memberId: friendSocket.memberId }));
   });
-  console.log(`== member ID: ${socket.memberId}, friend's socket ID list END ==`);
+}
+
+/**
+ * 내 소켓에게 온라인인 친구 목록을 초기화해야함을 알리는 메소드
+ * @param {*} socket
+ * @param {*} friendSocketList
+ */
+function emitSetFriendList(socket, friendSocketList) {
+  const onlineFriendMemberIdList = friendSocketList.map((friend) => friend.memberId);
+  socket.emit("set-friend-list", formatResponse(true, "set-friend-list", { onlineFriendMemberIdList }));
 }
 
 module.exports = {
-  notifyFriendsOnline,
+  emitFriendOnline,
+  emitSetFriendList,
 };

@@ -3,18 +3,176 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Socket.IO Chat</title>
+    <title>Socket 서버 테스트</title>
+    <style>
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: Arial, sans-serif;
+      }
+
+      .container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh; /* 100% of the viewport height */
+      }
+
+      .top-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #333;
+        color: white;
+        padding: 10px;
+      }
+
+      .top-bar input,
+      .top-bar button,
+      .top-bar p {
+        margin: 0 10px;
+      }
+
+      .content {
+        display: flex;
+        flex: 1;
+        overflow: hidden; /* Prevent scrolling in the content area */
+      }
+
+      .column {
+        flex: 1;
+        padding: 20px;
+        border: 1px solid #ddd;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      .column:nth-child(odd) {
+        background-color: #f9f9f9;
+      }
+
+      .column:nth-child(even) {
+        background-color: #e9e9e9;
+      }
+
+      .chatroom {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        box-sizing: border-box;
+        overflow: hidden; /* Prevent scrolling in the chatroom area */
+      }
+
+      .messages {
+        flex: 1;
+        overflow-y: auto; /* Enable scrolling in the messages area */
+      }
+
+      .chat-form {
+        display: flex;
+      }
+
+      .chat-form input {
+        flex: 1;
+      }
+
+      .chatroom-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .chatroom-item img {
+        border-radius: 50%;
+      }
+
+      .chatroom-info {
+        flex: 1;
+        margin-left: 10px;
+      }
+
+      .chatroom-info p {
+        margin: 0;
+      }
+
+      .message-item {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 10px;
+      }
+
+      .message-item.mine {
+        justify-content: flex-end;
+      }
+
+      .message-content {
+        display: flex;
+        align-items: center;
+      }
+
+      .sender-name {
+        font-weight: bold;
+        margin-bottom: 5px;
+      }
+
+      .message-text {
+        margin: 0 10px;
+      }
+
+      .message-time {
+        font-size: 0.8em;
+        color: gray;
+      }
+      .online {
+        color: red;
+        font-size: 14px; /* 텍스트 크기 */
+        font-weight: 300; /* 굵기 (400이 기본값, 더 얇게 하려면 숫자를 낮추세요) */
+        font-style: italic; /* 이탤릭체 */
+        padding-left: 5px; /* 왼쪽 여백 */
+      }
+
+      .offline {
+        color: gray;
+        font-size: 14px; /* 텍스트 크기 */
+        font-weight: 300; /* 굵기 (400이 기본값, 더 얇게 하려면 숫자를 낮추세요) */
+        font-style: italic; /* 이탤릭체 */
+        padding-left: 5px; /* 왼쪽 여백 */
+      }
+    </style>
   </head>
   <body>
-    <ul id="messages"></ul>
-    <form id="form" action="">
-      <input id="input" autocomplete="off" />
-      <button>Send</button>
-    </form>
-    <input id="userId" type="number" placeholder="Enter your ID" />
-    <button id="loginButton">Login</button>
-    <button id="getSocketListButton">get socket list on express</button>
-    <ul id="onlineFriends"></ul>
+    <div class="container">
+      <div class="top-bar">
+        <div>
+          <input id="userId" type="number" placeholder="Enter your ID" />
+          <button id="loginButton">Login</button>
+        </div>
+        <p id="loginStatus">You are not Login User</p>
+      </div>
+      <div class="content">
+        <div class="column">
+          <h2>친구 목록</h2>
+          <ul id="onlineFriends"></ul>
+        </div>
+        <div class="column">
+          <h2>채팅방 목록</h2>
+          <ul id="chatroomList"></ul>
+          <button id="fetchChatroomsButton">채팅방 목록 페이지 입장</button>
+        </div>
+        <div class="column chatroom">
+          <h2>채팅방</h2>
+          <ul id="messages" class="messages"></ul>
+          <form id="form" class="chat-form" action="">
+            <input id="input" autocomplete="off" />
+            <button>Send</button>
+          </form>
+        </div>
+      </div>
+    </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
@@ -23,11 +181,13 @@
       const input = document.getElementById("input");
       const userIdInput = document.getElementById("userId");
       const loginButton = document.getElementById("loginButton");
-      const getSocketListButton = document.getElementById("getSocketListButton");
       const onlineFriends = document.getElementById("onlineFriends");
+      const loginStatus = document.getElementById("loginStatus");
+      const fetchChatroomBtn = document.getElementById("fetchChatroomsButton");
 
       function connectSocket(jwtToken = null) {
-        const options = jwtToken ? { extraHeaders: { Authorization: `Bearer ${jwtToken}` } } : {}; // jwt토큰이 있으면 담아 보내고, 없으면 빼고 보낸다
+        const options = jwtToken ? { auth: { token: jwtToken } } : {};
+
         socket = io(options);
 
         socket.on("connect", () => {
@@ -53,14 +213,40 @@
           document.getElementById("messages").appendChild(item);
         });
 
-        getSocketListButton.addEventListener("click", () => {
-          socket.emit("printSocketIds");
-        });
-
         socket.on("friend-online", (memberId) => {
           const item = document.createElement("li");
           item.textContent = `Friend ID: ${memberId} is online`;
           onlineFriends.appendChild(item);
+        });
+
+        socket.on("member-info", (memberId) => {
+          loginStatus.textContent = "You are Login User, member Id: " + memberId;
+        });
+
+        socket.on("set-friend-list", (response) => {
+          const onlineFriendMemberIdList = response.data.onlineFriendMemberIdList;
+
+          // 로그 확인
+          console.log("set-friend-list event에 대한 listener가 작동합니다.");
+          console.log("Online Friend Member ID List:", onlineFriendMemberIdList);
+
+          // localStorage에 데이터 저장
+          localStorage.setItem("onlineFriendMemberIdList", JSON.stringify(onlineFriendMemberIdList));
+        });
+
+        socket.on("unread-count-update", (data) => {
+          console.log(`New count for chatroom ${data.chatroomUuid}: ${data.newCount}`);
+          const chatroomItem = document.querySelector(`.chatroom-item[data-chatroom-uuid="${data.chatroomUuid}"]`);
+          if (chatroomItem) {
+            const newCountElement = chatroomItem.querySelector("p[data-new-count]");
+            if (newCountElement) {
+              newCountElement.textContent = `New: ${data.newCount}`;
+            } else {
+              console.error(`Could not find element to update new count for chatroom ${data.chatroomUuid}`);
+            }
+          } else {
+            console.error(`Could not find chatroom item with UUID ${data.chatroomUuid}`);
+          }
         });
       }
 
@@ -72,7 +258,6 @@
         }
 
         fetch("http://localhost:8080/v1/auth/login", {
-          // API server로부터 jwt토큰을 받아온다
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -86,26 +271,20 @@
           .then((data) => {
             if (data.isSuccess && data.result.accessToken) {
               const jwtToken = data.result.accessToken;
-              localStorage.setItem("jwtToken", jwtToken); // 받아온 jwt토큰을 localStorage에 저장한다
+              localStorage.setItem("jwtToken", jwtToken);
               alert("Login successful! Token received.");
               console.log("Using existing socket. Socket ID:", socket.id);
 
-              //
-              // Socket server로 해당 클라이언트가 로그인 했음을 알리기 위한 요청 보내기
               fetch("/login", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",
-                  Authorization: `Bearer ${jwtToken}`, // jwtToken을 Authorization 헤더에 추가
-                  "Socket-Id": socket.id, // 클라이언트의 소켓 ID를 Socket-Id 헤더에 추가
+                  Authorization: `Bearer ${jwtToken}`,
+                  "Socket-Id": socket.id,
                 },
-                // body: JSON.stringify({
-                //   // 추가적인 데이터가 필요하다면 여기에 작성
-                // }),
               })
                 .then((response) => response.json())
                 .then((data) => {
-                  // 추가적인 처리 로직 작성
                   console.log(data);
                 })
                 .catch((error) => console.error("Error:", error));
@@ -116,7 +295,162 @@
           .catch((error) => console.error("Error:", error));
       });
 
-      // 페이지 로드 시 Socket.IO 연결 시도
+      fetchChatroomBtn.addEventListener("click", () => {
+        const jwtToken = localStorage.getItem("jwtToken");
+        if (!jwtToken) {
+          console.error("JWT token is missing.");
+          return;
+        }
+
+        fetch("http://localhost:8080/v1/member/chatroom", {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.isSuccess && data.result) {
+              // Clear existing chatroom elements
+              const chatroomListElement = document.getElementById("chatroomList");
+              chatroomListElement.innerHTML = "";
+
+              // Loop through response data to create chatroom list elements
+              data.result.forEach((chatroom) => {
+                const li = document.createElement("li");
+                li.classList.add("chatroom-item");
+                li.setAttribute("data-chatroom-uuid", chatroom.uuid); // Add data-chatroom-uuid attribute
+
+                li.innerHTML = `
+                                      <div>
+                                          <img src="${chatroom.targetMemberImg}" alt="Profile Image" width="30" height="30">
+                                      </div>
+                                      <div class="chatroom-info">
+                                          <span>${chatroom.targetMemberName}</span>
+                                          <p>${chatroom.lastMsg}</p>
+                                      </div>
+                                      <div>
+                                          <p>${new Date(chatroom.lastMsgTime).toLocaleString()}</p>
+                                          <p data-new-count>New: ${chatroom.notReadMsgCnt}</p>
+                                          <button class="enter-chatroom-btn" data-chatroom-uuid="${chatroom.uuid}">채팅방 입장</button>
+                                      </div>
+                                  `;
+                chatroomListElement.appendChild(li);
+              });
+
+              // Add event listeners to the "Enter Chatroom" buttons
+              const enterChatroomButtons = document.querySelectorAll(".enter-chatroom-btn");
+              enterChatroomButtons.forEach((button) => {
+                button.addEventListener("click", (event) => {
+                  const chatroomUuid = event.target.getAttribute("data-chatroom-uuid");
+                  enterChatroom(chatroomUuid);
+                });
+              });
+            } else {
+              console.error("Failed to fetch chatroom data.", data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching chatroom data:", error);
+          });
+      });
+
+      function enterChatroom(chatroomUuid) {
+        console.log(`Entering chatroom with UUID: ${chatroomUuid}`);
+        const jwtToken = localStorage.getItem("jwtToken");
+        if (!jwtToken) {
+          console.error("JWT token is missing.");
+          return;
+        }
+
+        // Fetch chatroom details to get targetMemberImg and targetMemberName
+        fetch(`http://localhost:8080/v1/chat/${chatroomUuid}`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.isSuccess && data.result) {
+              const targetMemberData = data.result;
+
+              // Update chatroom header
+              const chatroomHeader = document.querySelector(".column.chatroom h2");
+
+              // Get onlineFriendMemberIdList from localStorage
+              const onlineFriendMemberIdList = JSON.parse(localStorage.getItem("onlineFriendMemberIdList")) || [];
+
+              // Check if targetMemberData.memberId exists in onlineFriendMemberIdList
+              const isOnline = onlineFriendMemberIdList.includes(targetMemberData.memberId);
+
+              // Determine status text based on online status
+              const statusText = isOnline ? "online" : "offline";
+
+              // Create status element with appropriate class
+              const statusElement = document.createElement("span");
+              statusElement.textContent = `(${statusText})`;
+              statusElement.classList.add(isOnline ? "online" : "offline");
+
+              // Update chatroom header with profile image, name, and status element
+              chatroomHeader.innerHTML = `<img src="${targetMemberData.memberProfileImg}" alt="Profile Image" width="30" height="30" style="vertical-align: middle;">${targetMemberData.name}`;
+              chatroomHeader.appendChild(statusElement);
+
+              // Fetch chatroom messages
+              fetch(`http://localhost:8080/v1/chat/${chatroomUuid}/messages?page=1`, {
+                headers: {
+                  Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
+                },
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.isSuccess && data.result && data.result.chatMessageDtoList) {
+                    // Clear existing messages
+                    const messagesElement = document.getElementById("messages");
+                    const shouldScrollToBottom = messagesElement.scrollTop === messagesElement.scrollHeight - messagesElement.clientHeight;
+
+                    messagesElement.innerHTML = "";
+
+                    const sortedMessages = data.result.chatMessageDtoList.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+                    // Loop through response data to create message elements
+                    sortedMessages.forEach((message) => {
+                      const li = document.createElement("li");
+                      li.classList.add("message-item");
+                      if (message.mine) {
+                        li.classList.add("mine");
+                      }
+                      li.innerHTML = `
+                        <div class="message-content">
+                          <img src="${message.senderProfileImg}" alt="Profile Image" width="30" height="30">
+                          <div>
+                            <p class="sender-name">${message.senderName}</p>
+                            <p class="message-text">${message.message}</p>
+                            <p class="message-time">${new Date(message.createdAt).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      `;
+                      messagesElement.appendChild(li);
+                    });
+
+                    // Scroll to bottom if was already at bottom before fetching new messages or on initial load
+                    if (shouldScrollToBottom || messagesElement.children.length === 0) {
+                      messagesElement.scrollTop = messagesElement.scrollHeight;
+                    }
+                  } else {
+                    console.error("Failed to fetch chatroom messages.", data.message);
+                  }
+                })
+                .catch((error) => {
+                  console.error("Error fetching chatroom messages:", error);
+                });
+            } else {
+              console.error("Failed to fetch chatroom details.", chatroomData.message);
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching chatroom details:", error);
+          });
+      }
+
       window.addEventListener("load", () => {
         const jwtToken = localStorage.getItem("jwtToken");
         connectSocket(jwtToken);
