@@ -11,7 +11,7 @@ function initializeChat(socket, io) {
     console.log("======================= chatroom uuid List START =======================");
     // uuidList는 ["05063951-6da7-4dbb-9134-3f8a7b6f8590", ...] 형태의 UUID 문자열 목록
     uuidList.forEach((uuid) => {
-      socket.join("chat_" + uuid);
+      socket.join("CHAT_" + uuid);
     });
     const rooms = Array.from(socket.rooms);
     console.log("현재 소켓이 join되어 있는 room 목록:", rooms);
