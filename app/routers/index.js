@@ -6,6 +6,7 @@ module.exports = (io) => {
   const router = express.Router();
 
   const { login } = require("../controller/loginController")(io); // io 객체를 전달
+  const { logout } = require("../controller/logoutController")(io);
   const { notifyChatroomEnter } = require("../controller/chatroomNotifyController")(io);
 
   router.get("/", (req, res) => {
@@ -15,6 +16,8 @@ module.exports = (io) => {
   router.use("/img", express.static(path.join(__dirname, "../../public/img")));
 
   router.post("/login", login);
+
+  router.post("/logout", logout);
 
   //router.post("/notify/chatroom/enter", notifyChatroomEnter);
 

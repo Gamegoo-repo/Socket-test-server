@@ -54,7 +54,7 @@ function login(io) {
         console.log(`Added memberId ${memberId} to socket ${socketId}`);
       } else {
         console.error(`Socket ${socketId} not found or disconnected.`);
-        return res.status(401).json(failResponse("SOCKET_INIT_FAILED", "socket id에 해당하는 socket 객체를 찾을 수 없습니다."));
+        return res.status(404).json(failResponse("SOCKET_NOT_FOUND", "socket id에 해당하는 socket 객체를 찾을 수 없습니다. socket 초기화 실패."));
       }
 
       // "member-info" event emit
