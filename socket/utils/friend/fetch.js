@@ -11,11 +11,13 @@ async function fetchFriends(socket) {
     if (response.data.isSuccess) {
       return response.data.result.friendInfoDtoList;
     } else {
-      throw new Error(`Failed to fetch friends: ${response.data.message}`);
+      console.error("Failed to fetch friends: ", response.data.message);
+
+      //throw new Error(`Failed to fetch friends: ${response.data.message}`);
     }
   } catch (error) {
     console.error("Error fetching friends data:", error);
-    throw error;
+    //throw error;
   }
 }
 
