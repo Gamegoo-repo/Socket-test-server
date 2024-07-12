@@ -150,6 +150,7 @@
         <div>
           <input id="userId" type="number" placeholder="Enter your ID" />
           <button id="loginButton">Login</button>
+          <button id="logoutButton">Logout</button>
         </div>
         <p id="loginStatus">You are not Login User</p>
       </div>
@@ -217,6 +218,7 @@
           document.getElementById("messages").appendChild(item);
         });
 
+        // friend-online event listener
         socket.on("friend-online", (response) => {
           // html 동적 생성
           const item = document.createElement("li");
@@ -226,18 +228,55 @@
           // 현재 온라인인 친구 목록 업데이트
           onlineFriendMemberIdList.push(response.data.memberId);
           console.log("current online Friend Member Id List:", onlineFriendMemberIdList);
+
+          // 현재 채팅 중인 (채팅창을 보고있는) memberId와 동일한 경우 상태 텍스트 변경
+          console.log("friend-online listener: currentChattingMemberId is.. ", currentChattingMemberId);
+          if (currentChattingMemberId === response.data.memberId) {
+            console.log("response.data.memberId is..  ", response.data.memberId);
+
+            const chatroomHeader = document.querySelector(".column.chatroom h2");
+            const statusElement = chatroomHeader.querySelector("span");
+            if (statusElement) {
+              statusElement.textContent = "(online)";
+              statusElement.classList.remove("offline");
+              statusElement.classList.add("online");
+            }
+          }
         });
 
         socket.on("member-info", (response) => {
           loginStatus.textContent = "You are Login User, member Id: " + response.data.memberId;
         });
 
-        socket.on("set-friend-list", (response) => {
+        // 현재 온라인인 친구 목록 초기화
+        socket.on("init-online-friend-list", (response) => {
           onlineFriendMemberIdList = response.data.onlineFriendMemberIdList;
 
           // 로그 확인
-          console.log("set-friend-list event에 대한 listener가 작동합니다.");
+          console.log("init-online-friend-list event에 대한 listener가 작동합니다.");
           console.log("Online Friend Member ID List:", onlineFriendMemberIdList);
+        });
+
+        // friend-offline event listener
+        socket.on("friend-offline", (response) => {
+          const memberId = response.data.memberId;
+
+          // onlineFriendMemberIdList에서 해당 memberId 제거
+          onlineFriendMemberIdList = onlineFriendMemberIdList.filter((id) => id !== memberId);
+
+          console.log(`Friend ID: ${memberId} is offline`);
+          console.log("Updated online Friend Member Id List:", onlineFriendMemberIdList);
+
+          // 현재 채팅 중인 memberId와 동일한 경우 상태 텍스트 변경
+          if (currentChattingMemberId === memberId) {
+            const chatroomHeader = document.querySelector(".column.chatroom h2");
+            const statusElement = chatroomHeader.querySelector("span");
+            if (statusElement) {
+              statusElement.textContent = "(offline)";
+              statusElement.classList.remove("online");
+              statusElement.classList.add("offline");
+            }
+          }
         });
       }
 
