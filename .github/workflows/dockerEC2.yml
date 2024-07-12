@@ -19,9 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Copy build artifacts
-        run: cp -R ./build ./ # 필요한 빌드 산출물을 복사합니다
-
+      
       # Docker 이미지 빌드
       - name: Build Docker Image
         run: docker build -t rimi3226/gamegoo-socket .
