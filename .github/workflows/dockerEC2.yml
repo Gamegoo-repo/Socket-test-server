@@ -1,4 +1,4 @@
-name: Node.js CICD npm with Docker and EC2
+name: Node.js CICD with Docker and EC2
 
 on:
   pull_request:
@@ -17,7 +17,7 @@ jobs:
         with:
           node-version: 16
 
-  docker-deploy:
+  docker:
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -38,6 +38,10 @@ jobs:
       - name: Push Docker Image
         run: docker push rimi3226/gamegoo-socket
 
+  deploy-to-ec2:
+    needs: docker
+    runs-on: ubuntu-latest
+    steps:
       # GET GitHub IP
       - name: Get GitHub IP
         id: ip
