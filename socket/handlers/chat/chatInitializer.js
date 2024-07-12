@@ -1,5 +1,10 @@
 const { fetchChatroomUuid } = require("../../utils/chat/fetch");
 
+/**
+ * socket 초기화 즉시 실행될 메소드
+ * @param {*} socket
+ * @param {*} io
+ */
 function initializeChat(socket, io) {
   // 소켓 초기화 즉시, API서버로 채팅방 uuid 목록 조회 요청 실행
   fetchChatroomUuid(socket).then((uuidList) => {

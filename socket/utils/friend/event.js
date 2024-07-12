@@ -4,11 +4,12 @@ const formatResponse = require("../common/responseFormatter");
  * 친구 소켓에게 내가 온라인 상태를 알리는 메소드
  * @param {*} io
  * @param {*} friendSocketList
+ * @param {*} memberId
  */
-function emitFriendOnline(io, friendSocketList) {
+function emitFriendOnline(io, friendSocketList, memberId) {
   friendSocketList.forEach((friendSocket) => {
     // 친구 소켓에게 friend-online emit
-    io.to(friendSocket.socketId).emit("friend-online", formatResponse(true, "friend-online", { memberId: friendSocket.memberId }));
+    io.to(friendSocket.socketId).emit("friend-online", formatResponse("friend-online", { memberId }));
   });
 }
 
@@ -19,7 +20,7 @@ function emitFriendOnline(io, friendSocketList) {
  */
 function emitSetFriendList(socket, friendSocketList) {
   const onlineFriendMemberIdList = friendSocketList.map((friend) => friend.memberId);
-  socket.emit("set-friend-list", formatResponse(true, "set-friend-list", { onlineFriendMemberIdList }));
+  socket.emit("set-friend-list", formatResponse("set-friend-list", { onlineFriendMemberIdList }));
 }
 
 module.exports = {

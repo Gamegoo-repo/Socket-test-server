@@ -1,6 +1,11 @@
 const { fetchFriends } = require("../../utils/friend/fetch");
 const { emitFriendOnline, emitSetFriendList } = require("../../utils/friend/event");
 
+/**
+ * socket 초기화 즉시 실행될 메소드
+ * @param {*} socket
+ * @param {*} io
+ */
 function initializeFriend(socket, io) {
   fetchFriends(socket) // 해당 회원의 친구 목록 조회 api 요청
     .then(async (friends) => {
@@ -21,7 +26,7 @@ function initializeFriend(socket, io) {
       console.log(`== member ID: ${socket.memberId}, friend's socket ID list END ==`);
 
       // 친구 소켓에게 "friend-online" event emit
-      emitFriendOnline(io, friendSocketList);
+      emitFriendOnline(io, friendSocketList, socket.memberId);
 
       // 이 소켓에게 "set-friend-list" event emit
       emitSetFriendList(socket, friendSocketList);

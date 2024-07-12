@@ -7,6 +7,8 @@ const initAlarm = require("./handlers/alarm/alarmInit");
 const initMatching = require("./handlers/matching/matchingInit");
 const initFriend = require("./handlers/friend/friendInit");
 
+const { emitMemberInfo } = require("./utils/login/event");
+
 function initializeSocket(server) {
   const io = socketIo(server);
 
@@ -27,7 +29,8 @@ function initializeSocket(server) {
           socket.token = token; // 해당 소켓 객체에 token 추가
           console.log("a user connected, memberId:", socket.memberId, "socketId:", socket.id);
 
-          socket.emit("member-info", socket.memberId);
+          // "member-info" event emit
+          emitMemberInfo(socket);
 
           // 초기화 함수들 호출
           initChat(socket, io);

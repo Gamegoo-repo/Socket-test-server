@@ -213,14 +213,14 @@
           document.getElementById("messages").appendChild(item);
         });
 
-        socket.on("friend-online", (memberId) => {
+        socket.on("friend-online", (response) => {
           const item = document.createElement("li");
-          item.textContent = `Friend ID: ${memberId} is online`;
+          item.textContent = `Friend ID: ${response.data.memberId} is online`;
           onlineFriends.appendChild(item);
         });
 
-        socket.on("member-info", (memberId) => {
-          loginStatus.textContent = "You are Login User, member Id: " + memberId;
+        socket.on("member-info", (response) => {
+          loginStatus.textContent = "You are Login User, member Id: " + response.data.memberId;
         });
 
         socket.on("set-friend-list", (response) => {
@@ -234,18 +234,18 @@
           localStorage.setItem("onlineFriendMemberIdList", JSON.stringify(onlineFriendMemberIdList));
         });
 
-        socket.on("unread-count-update", (data) => {
-          console.log(`New count for chatroom ${data.chatroomUuid}: ${data.newCount}`);
-          const chatroomItem = document.querySelector(`.chatroom-item[data-chatroom-uuid="${data.chatroomUuid}"]`);
+        socket.on("unread-count-update", (response) => {
+          console.log(`New count for chatroom ${response.data.chatroomUuid}: ${response.data.newCount}`);
+          const chatroomItem = document.querySelector(`.chatroom-item[data-chatroom-uuid="${response.data.chatroomUuid}"]`);
           if (chatroomItem) {
             const newCountElement = chatroomItem.querySelector("p[data-new-count]");
             if (newCountElement) {
-              newCountElement.textContent = `New: ${data.newCount}`;
+              newCountElement.textContent = `New: ${response.data.newCount}`;
             } else {
-              console.error(`Could not find element to update new count for chatroom ${data.chatroomUuid}`);
+              console.error(`Could not find element to update new count for chatroom ${response.data.chatroomUuid}`);
             }
           } else {
-            console.error(`Could not find chatroom item with UUID ${data.chatroomUuid}`);
+            console.error(`Could not find chatroom item with UUID ${response.data.chatroomUuid}`);
           }
         });
       }

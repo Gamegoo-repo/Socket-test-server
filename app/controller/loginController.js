@@ -6,8 +6,15 @@ const initAlarm = require("../../socket/handlers/alarm/alarmInit");
 const initMatching = require("../../socket/handlers/matching/matchingInit");
 const initFriend = require("../../socket/handlers/friend/friendInit");
 
+const { emitMemberInfo } = require("../../socket/utils/login/event");
+
 const { successResponse, failResponse } = require("../common/responseFormatter");
 
+/**
+ * 로그인 요청한 클라이언트의 socket에 memberId, jwt를 설정하고 socket 초기화 메소드 실행
+ * @param {*} io
+ * @returns
+ */
 function login(io) {
   return (req, res) => {
     // "Authorization" 헤더에서 JWT 토큰 추출
@@ -17,22 +24,27 @@ function login(io) {
       jwtToken = authorizationHeader.substring(7); // 'Bearer ' 이후의 부분이 토큰임
     }
 
-    // jwt token 검증
+    // jwt token 존재 여부 검증
     if (!jwtToken) {
-      return res.status(401).json(failResponse("COMMON401", "JWT token not provided"));
+      return res.status(401).json(failResponse("AUTH", "JWT 토큰이 없습니다."));
     }
 
     // JWT 토큰을 검증하고 memberId를 추출
     jwt.verify(jwtToken, jwtSecret, (err, decoded) => {
       if (err) {
         console.error("Error verifying token:", err);
-        return res.status(401).json(failResponse("COMMON401", "JWT token verification failed"));
+        return res.status(401).json(failResponse("AUTH", "JWT 토큰 인증에 실패했습니다"));
       }
 
       const memberId = decoded.memberId; // JWT 토큰에서 memberId 추출
 
       // "Socket-Id" 헤더에서 클라이언트 소켓 ID 추출
       const socketId = req.headers["socket-id"];
+
+      // Socket-Id 존재 여부 검증
+      if (!socketId) {
+        return res.status(401).json(failResponse("SOCKET_INIT_FAILED", "header에서 socket id를 추출할 수 없습니다."));
+      }
 
       // Socket.IO를 통해 클라이언트 소켓을 찾고 memberId, token을 추가
       const socket = io.sockets.sockets.get(socketId);
@@ -42,9 +54,11 @@ function login(io) {
         console.log(`Added memberId ${memberId} to socket ${socketId}`);
       } else {
         console.error(`Socket ${socketId} not found or disconnected.`);
+        return res.status(401).json(failResponse("SOCKET_INIT_FAILED", "socket id에 해당하는 socket 객체를 찾을 수 없습니다."));
       }
 
-      socket.emit("member-info", socket.memberId);
+      // "member-info" event emit
+      emitMemberInfo(socket);
 
       // 초기화 함수들 호출
       initChat(socket, io);
@@ -52,7 +66,7 @@ function login(io) {
       initMatching(socket, io);
       initFriend(socket, io);
 
-      res.status(200).json(successResponse("socket 설정 성공"));
+      res.status(200).json(successResponse("socket 초기화 성공"));
     });
   };
 }

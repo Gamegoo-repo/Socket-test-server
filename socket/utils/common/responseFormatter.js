@@ -1,8 +1,12 @@
-// socket event 응답을 포맷팅하는 함수
-function formatResponse(status, message, data) {
+/**
+ * socket event 응답을 포맷팅하는 메소드
+ * @param {*} eventName
+ * @param {*} data
+ * @returns
+ */
+function formatResponse(eventName, data) {
   return {
-    status: status,
-    message: message,
+    event: eventName,
     data: data,
     timestamp: new Date().toISOString(),
   };

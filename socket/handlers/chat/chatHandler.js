@@ -1,20 +1,14 @@
-const formatResponse = require("../../utils/common/responseFormatter");
+const { emitChatMessage } = require("../../utils/chat/event");
 
+/**
+ * socket event에 대한 listener
+ * @param {*} socket
+ * @param {*} io
+ */
 function setupChatListeners(socket, io) {
-  socket.on("chat message", (msg) => {
-    io.emit("chat message", formatResponse(true, "success", { msg: msg }));
-  });
-
-  socket.on("printSocketIds", () => {
-    printConnectedSocketIds(io);
-  });
-}
-
-function printConnectedSocketIds(io) {
-  const connectedSockets = io.sockets.sockets;
-  console.log("== Connected Sockets ==");
-  connectedSockets.forEach((connSocket, key) => {
-    console.log(`Socket ID: ${key}, Member ID: ${connSocket.memberId}`);
+  // chat-message event 발생 시, io 전체에게 msg emit // 나중에 수정해야함
+  socket.on("chat-message", (msg) => {
+    emitChatMessage(io, msg);
   });
 }
 
