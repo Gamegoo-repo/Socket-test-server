@@ -16,8 +16,10 @@ async function fetchFriends(socket) {
       //throw new Error(`Failed to fetch friends: ${response.data.message}`);
     }
   } catch (error) {
-    console.error("Error fetching friends data:", error);
+    console.error("Error fetching friends data:");
+    console.error("JWT value: ", socket.token);
     //throw error;
+    return [];
   }
 }
 
