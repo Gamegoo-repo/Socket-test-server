@@ -150,7 +150,6 @@
         <div>
           <input id="userId" type="number" placeholder="Enter your ID" />
           <button id="loginButton">Login</button>
-          <button id="logoutButton">Logout</button>
         </div>
         <p id="loginStatus">You are not Login User</p>
       </div>
@@ -182,6 +181,7 @@
       const input = document.getElementById("input");
       const userIdInput = document.getElementById("userId");
       const loginButton = document.getElementById("loginButton");
+      const logoutButton = document.getElementById("logoutButton");
       const onlineFriends = document.getElementById("onlineFriends");
       const loginStatus = document.getElementById("loginStatus");
       const fetchChatroomBtn = document.getElementById("fetchChatroomsButton");
@@ -320,6 +320,37 @@
                 .catch((error) => console.error("Error:", error));
             } else {
               alert("Login failed.");
+            }
+          })
+          .catch((error) => console.error("Error:", error));
+      });
+
+      logoutButton.addEventListener("click", () => {
+        // 로그아웃 버튼 클릭 이벤트 추가
+        const jwtToken = localStorage.getItem("jwtToken");
+        if (!jwtToken) {
+          alert("You are not logged in.");
+          return;
+        }
+
+        // 8080으로 먼저 logout 요청 보내는게 맞지만, 여기서는 일단 3000으로만 보낸다
+        fetch("/logout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${jwtToken}`,
+            "Socket-Id": socket.id,
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.isSuccess) {
+              alert("Logout successful!");
+              localStorage.removeItem("jwtToken");
+              // 로그아웃 후 페이지 새로고침 또는 다른 후속 조치
+              location.reload();
+            } else {
+              alert("Logout failed.");
             }
           })
           .catch((error) => console.error("Error:", error));
