@@ -209,9 +209,36 @@
         form.addEventListener("submit", (e) => {
           e.preventDefault();
           if (input.value) {
+            const msg = input.value;
             // 메시지를 보낼 때 room 이름과 메시지를 함께 전송
-            socket.emit("chat-message", { uuid: currentViewingChatroomUuid, message: input.value });
+            socket.emit("chat-message", { uuid: currentViewingChatroomUuid, message: msg });
             input.value = "";
+
+            // 내가 보낸 메시지 요소 생성
+            const messagesElement = document.getElementById("messages");
+            const shouldScrollToBottom = messagesElement.scrollTop === messagesElement.scrollHeight - messagesElement.clientHeight;
+            const li = document.createElement("li");
+            li.classList.add("message-item");
+            li.classList.add("mine");
+            li.innerHTML = `
+                                    <div class="message-content">
+                                      <img src="${localStorage.getItem("profileImg")}" alt="Profile Image" width="30" height="30">
+                                      <div>
+                                        <p class="sender-name">${localStorage.getItem("name")}</p>
+                                        <p class="message-text">${msg}</p>
+                                        <p class="message-time">${new Date().toLocaleString()}</p>
+                                      </div>
+                                    </div>
+                                  `;
+            messagesElement.appendChild(li);
+
+            // Scroll to bottom if was already at bottom before fetching new messages or on initial load
+            if (shouldScrollToBottom || messagesElement.children.length === 0) {
+              //messagesElement.scrollTop = messagesElement.scrollHeight;
+              setTimeout(() => {
+                messagesElement.scrollTop = messagesElement.scrollHeight;
+              }, 0);
+            }
           }
         });
 
@@ -227,24 +254,24 @@
               li.classList.add("mine");
             }
             li.innerHTML = `
-                              <div class="message-content">
-                                <img src="${response.data.senderProfileImg}" alt="Profile Image" width="30" height="30">
-                                <div>
-                                  <p class="sender-name">${response.data.senderName}</p>
-                                  <p class="message-text">${response.data.message}</p>
-                                  <p class="message-time">${new Date(response.data.createdAt).toLocaleString()}</p>
-                                </div>
-                              </div>
-                            `;
+                                    <div class="message-content">
+                                      <img src="${response.data.senderProfileImg}" alt="Profile Image" width="30" height="30">
+                                      <div>
+                                        <p class="sender-name">${response.data.senderName}</p>
+                                        <p class="message-text">${response.data.message}</p>
+                                        <p class="message-time">${new Date(response.data.createdAt).toLocaleString()}</p>
+                                      </div>
+                                    </div>
+                                  `;
             messagesElement.appendChild(li);
-          }
 
-          // Scroll to bottom if was already at bottom before fetching new messages or on initial load
-          if (shouldScrollToBottom || messagesElement.children.length === 0) {
-            //messagesElement.scrollTop = messagesElement.scrollHeight;
-            setTimeout(() => {
-              messagesElement.scrollTop = messagesElement.scrollHeight;
-            }, 0);
+            // Scroll to bottom if was already at bottom before fetching new messages or on initial load
+            if (shouldScrollToBottom || messagesElement.children.length === 0) {
+              //messagesElement.scrollTop = messagesElement.scrollHeight;
+              setTimeout(() => {
+                messagesElement.scrollTop = messagesElement.scrollHeight;
+              }, 0);
+            }
           }
         });
 
@@ -333,11 +360,29 @@
           .then((response) => response.json())
           .then((data) => {
             if (data.isSuccess && data.result.accessToken) {
+              // jwt 토큰 localStorage에 저장
               const jwtToken = data.result.accessToken;
               localStorage.setItem("jwtToken", jwtToken);
+
               alert("Login successful! Token received.");
               console.log("Using existing socket. Socket ID:", socket.id);
 
+              // 나의 회원 정보 요청해 localStorage에 저장
+              fetch("http://localhost:8080/v1/member", {
+                headers: {
+                  Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
+                },
+              })
+                .then((response) => response.json())
+                .then((data) => {
+                  if (data.isSuccess && data.result) {
+                    localStorage.setItem("profileImg", data.result.profileImg);
+                    localStorage.setItem("name", data.result.name);
+                  }
+                })
+                .catch((error) => console.error("Error:", error));
+
+              // 3000 서버로 api 요청(소켓 초기화를 위함)
               fetch("/login", {
                 method: "POST",
                 headers: {
@@ -415,19 +460,19 @@
                 li.setAttribute("data-chatroom-uuid", chatroom.uuid); // Add data-chatroom-uuid attribute
 
                 li.innerHTML = `
-                                            <div>
-                                                <img src="${chatroom.targetMemberImg}" alt="Profile Image" width="30" height="30">
-                                            </div>
-                                            <div class="chatroom-info">
-                                                <span>${chatroom.targetMemberName}</span>
-                                                <p>${chatroom.lastMsg}</p>
-                                            </div>
-                                            <div>
-                                                <p>${new Date(chatroom.lastMsgTime).toLocaleString()}</p>
-                                                <p data-new-count>New: ${chatroom.notReadMsgCnt}</p>
-                                                <button class="enter-chatroom-btn" data-chatroom-uuid="${chatroom.uuid}">채팅방 입장</button>
-                                            </div>
-                                        `;
+                                                  <div>
+                                                      <img src="${chatroom.targetMemberImg}" alt="Profile Image" width="30" height="30">
+                                                  </div>
+                                                  <div class="chatroom-info">
+                                                      <span>${chatroom.targetMemberName}</span>
+                                                      <p>${chatroom.lastMsg}</p>
+                                                  </div>
+                                                  <div>
+                                                      <p>${new Date(chatroom.lastMsgTime).toLocaleString()}</p>
+                                                      <p data-new-count>New: ${chatroom.notReadMsgCnt}</p>
+                                                      <button class="enter-chatroom-btn" data-chatroom-uuid="${chatroom.uuid}">채팅방 입장</button>
+                                                  </div>
+                                              `;
                 chatroomListElement.appendChild(li);
               });
 
@@ -520,15 +565,15 @@
                         li.classList.add("mine");
                       }
                       li.innerHTML = `
-                              <div class="message-content">
-                                <img src="${message.senderProfileImg}" alt="Profile Image" width="30" height="30">
-                                <div>
-                                  <p class="sender-name">${message.senderName}</p>
-                                  <p class="message-text">${message.message}</p>
-                                  <p class="message-time">${new Date(message.createdAt).toLocaleString()}</p>
-                                </div>
-                              </div>
-                            `;
+                                    <div class="message-content">
+                                      <img src="${message.senderProfileImg}" alt="Profile Image" width="30" height="30">
+                                      <div>
+                                        <p class="sender-name">${message.senderName}</p>
+                                        <p class="message-text">${message.message}</p>
+                                        <p class="message-time">${new Date(message.createdAt).toLocaleString()}</p>
+                                      </div>
+                                    </div>
+                                  `;
                       messagesElement.appendChild(li);
                     });
 

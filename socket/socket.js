@@ -48,7 +48,7 @@ function initializeSocket(server) {
     }
 
     // disconnect 시에 친구 소켓에게 friend-offline event emit
-    socket.on("disconnect", () => {
+    socket.on("disconnect", async () => {
       console.log("DISCONNECTED, memberId: ", socket.memberId);
       fetchFriends(socket).then(async (friends) => {
         // 친구 중에서 현재 온라인인 친구의 소켓 id 및 memberId array 생성
