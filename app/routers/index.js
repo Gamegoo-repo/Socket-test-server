@@ -16,7 +16,7 @@ module.exports = (io) => {
 
   router.post("/login", login);
 
-  router.post("/notify/chatroom/enter", notifyChatroomEnter);
+  //router.post("/notify/chatroom/enter", notifyChatroomEnter);
 
   return router;
 };

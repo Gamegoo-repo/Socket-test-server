@@ -1,5 +1,6 @@
 const { emitUnreadCountUpdate } = require("../../socket/utils/chat/event");
 
+// 이전엔 사용했으나, 앞으로는 사용하지 않을 예정. 조금 뒀다가 아예 삭제하기
 /**
  * 특정 회원이 특정 채팅방에 입장했을 때 실행하는 메소드, 해당 회원에게 "unread-count-update" event emit
  * @param {*} io
