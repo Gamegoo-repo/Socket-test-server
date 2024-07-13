@@ -47,6 +47,7 @@
         display: flex;
         flex-direction: column;
         overflow-y: auto;
+        padding-left: 10px; /* 줄여진 왼쪽 여백 */
       }
 
       .column:nth-child(odd) {
@@ -68,6 +69,7 @@
       .messages {
         flex: 1;
         overflow-y: auto; /* Enable scrolling in the messages area */
+        padding-left: 5px;
       }
 
       .chat-form {
@@ -82,7 +84,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 10px;
+        padding: 5px;
         border-bottom: 1px solid #ddd;
       }
 
@@ -92,7 +94,7 @@
 
       .chatroom-info {
         flex: 1;
-        margin-left: 10px;
+        margin-left: 5px;
       }
 
       .chatroom-info p {
@@ -141,6 +143,16 @@
         font-weight: 300; /* 굵기 (400이 기본값, 더 얇게 하려면 숫자를 낮추세요) */
         font-style: italic; /* 이탤릭체 */
         padding-left: 5px; /* 왼쪽 여백 */
+      }
+
+      p[data-new-count] {
+        color: red; /* 글자 색상 빨간색 */
+        font-weight: bold; /* 굵기 */
+        text-align: right; /* 오른쪽 정렬 */
+      }
+
+      #chatroomList {
+        padding-left: 5px;
       }
     </style>
   </head>
@@ -304,6 +316,7 @@
               });
           } else {
             // 내가 보고있는 채팅방에서 온 메시지가 아닌 경우
+
             // 채팅방 목록 내의 마지막 전송시각 업데이트
             const chatroomItemLastTime = document.querySelector(`.chatroom-item[data-chatroom-uuid="${response.data.chatroomUuid}"] p[last-msg-time]`);
             if (chatroomItemLastTime) {
@@ -320,14 +333,16 @@
               console.error(`Could not find chatroom item with UUID ${response.data.chatroomUuid} to update last msg text.`);
             }
 
-            // 채팅방 목록 내의 읽지 않은 메시지 개수 업데이트
-            const chatroomItemNewCnt = document.querySelector(`.chatroom-item[data-chatroom-uuid="${response.data.chatroomUuid}"] p[data-new-count]`);
-            if (chatroomItemNewCnt) {
-              // 현재 텍스트 내용을 숫자로 변환하여 1 증가시킨 후 다시 설정
-              const currentCount = parseInt(chatroomItemNewCnt.textContent);
-              chatroomItemNewCnt.textContent = `${currentCount + 1}`;
-            } else {
-              console.error(`Could not find chatroom item with UUID ${response.data.chatroomUuid} to update new message count.`);
+            // 해당 메시지의 전송자가 내가 아닌 경우에만 채팅방 목록 내의 읽지 않은 메시지 개수 업데이트
+            if (response.data.senderId != memberId) {
+              const chatroomItemNewCnt = document.querySelector(`.chatroom-item[data-chatroom-uuid="${response.data.chatroomUuid}"] p[data-new-count]`);
+              if (chatroomItemNewCnt) {
+                // 현재 텍스트 내용을 숫자로 변환하여 1 증가시킨 후 다시 설정
+                const currentCount = parseInt(chatroomItemNewCnt.textContent);
+                chatroomItemNewCnt.textContent = `${currentCount + 1}`;
+              } else {
+                console.error(`Could not find chatroom item with UUID ${response.data.chatroomUuid} to update new message count.`);
+              }
             }
           }
         });
