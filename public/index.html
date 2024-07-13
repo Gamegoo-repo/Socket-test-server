@@ -633,7 +633,7 @@
                     sortedMessages.forEach((message) => {
                       const li = document.createElement("li");
                       li.classList.add("message-item");
-                      if (message.mine) {
+                      if (message.senderId === memberId) {
                         li.classList.add("mine");
                       }
                       li.innerHTML = `
