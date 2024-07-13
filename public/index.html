@@ -187,6 +187,8 @@
       const loginStatus = document.getElementById("loginStatus");
       const fetchChatroomBtn = document.getElementById("fetchChatroomsButton");
 
+      const apiServerUrl = "192.168.0.5";
+
       let memberId = null;
       let onlineFriendMemberIdList = [];
       let currentViewingChatroomUuid = null;
@@ -275,7 +277,7 @@
 
             // 8080에게 해당 채팅방 대화를 읽었음 요청 전송
             const jwtToken = localStorage.getItem("jwtToken");
-            fetch(`http://localhost:8080/v1/chat/${currentViewingChatroomUuid}`, {
+            fetch(`http://${apiServerUrl}:8080/v1/chat/${currentViewingChatroomUuid}`, {
               headers: {
                 Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
               },
@@ -402,7 +404,7 @@
           return;
         }
 
-        fetch("http://localhost:8080/v1/auth/login", {
+        fetch(`http://${apiServerUrl}:8080/v1/auth/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -423,7 +425,7 @@
               console.log("Using existing socket. Socket ID:", socket.id);
 
               // 나의 회원 정보 요청해 localStorage에 저장
-              fetch("http://localhost:8080/v1/member", {
+              fetch(`http://${apiServerUrl}:8080/v1/member`, {
                 headers: {
                   Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
                 },
@@ -496,7 +498,7 @@
           return;
         }
 
-        fetch("http://localhost:8080/v1/member/chatroom", {
+        fetch(`http://${apiServerUrl}:8080/v1/member/chatroom`, {
           headers: {
             Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
           },
@@ -557,7 +559,7 @@
         }
 
         // Fetch chatroom details to get targetMemberImg and targetMemberName
-        fetch(`http://localhost:8080/v1/chat/${chatroomUuid}`, {
+        fetch(`http://${apiServerUrl}:8080/v1/chat/${chatroomUuid}`, {
           headers: {
             Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
           },
@@ -596,7 +598,7 @@
               currentChattingMemberId = targetMemberData.memberId;
 
               // Fetch chatroom messages
-              fetch(`http://localhost:8080/v1/chat/${chatroomUuid}/messages?page=1`, {
+              fetch(`http://${apiServerUrl}:8080/v1/chat/${chatroomUuid}/messages?page=1`, {
                 headers: {
                   Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
                 },
