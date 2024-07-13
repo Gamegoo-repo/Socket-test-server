@@ -16,7 +16,9 @@ function initializeSocket(server) {
   const io = socketIo(server);
 
   io.on("connection", (socket) => {
-    console.log("a user connected, memberId:", socket.memberId, "socketId:", socket.id);
+    if (!socket.memberId) {
+      console.log("a user connected, memberId:", socket.memberId, "socketId:", socket.id);
+    }
 
     // socket auth에서 JWT 토큰 추출
     const token = socket.handshake.auth.token;
@@ -50,16 +52,20 @@ function initializeSocket(server) {
     // disconnect 시에 친구 소켓에게 friend-offline event emit
     socket.on("disconnect", async () => {
       console.log("DISCONNECTED, memberId: ", socket.memberId);
-      fetchFriends(socket).then(async (friends) => {
-        // 친구 중에서 현재 온라인인 친구의 소켓 id 및 memberId array 생성
-        const friendIdList = friends.map((friend) => friend.memberId);
 
-        // 친구 memberId로 socketId 찾기
-        const friendSocketList = await getSocketIdByMemberId(io, friendIdList);
+      // 해당 socket이 memberId를 가질 때에만(로그인한 소켓인 경우에만)
+      if (socket.memberId) {
+        fetchFriends(socket).then(async (friends) => {
+          // 친구 중에서 현재 온라인인 친구의 소켓 id 및 memberId array 생성
+          const friendIdList = friends.map((friend) => friend.memberId);
 
-        // 친구 소켓에게 "friend-offline" event emit
-        emitFriendOffline(io, friendSocketList, socket.memberId);
-      });
+          // 친구 memberId로 socketId 찾기
+          const friendSocketList = await getSocketIdByMemberId(io, friendIdList);
+
+          // 친구 소켓에게 "friend-offline" event emit
+          emitFriendOffline(io, friendSocketList, socket.memberId);
+        });
+      }
     });
   });
 
