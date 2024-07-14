@@ -227,9 +227,32 @@
           e.preventDefault();
           if (input.value) {
             const msg = input.value;
-            // 메시지를 보낼 때 room 이름과 메시지를 함께 전송
+            // 메시지를 보낼 때 room 이름과 메시지, 현재 시각을 함께 전송
             socket.emit("chat-message", { uuid: currentViewingChatroomUuid, message: msg });
             input.value = "";
+
+            // messagesFromAllChatroom array 업데이트
+            // 이 채팅방 uuid에 해당하는 json 찾기
+            messagesFromThisChatroom = messagesFromAllChatroom.find((elem) => elem.chatroomUuid === currentViewingChatroomUuid);
+
+            // 제일 앞 message element 제거(가장 예전 메시지)
+            messagesFromThisChatroom.chatMessageDtoList.shift();
+
+            // 제일 뒤에 방금 보낸 새로운 메시지 insert
+            // 현재 날짜와 시간
+            const now = new Date();
+
+            // ISO 8601 형식의 문자열로 변환
+            const isoString = now.toISOString();
+            // 내 메시지 element 생성
+            const newMessage = {
+              createdAt: isoString,
+              message: msg,
+              senderId: memberId,
+              senderName: localStorage.getItem("name"),
+              senderProfileImg: localStorage.getItem("profileImg"),
+            };
+            messagesFromThisChatroom.chatMessageDtoList.push(newMessage);
 
             // 내가 보낸 메시지 요소 생성
             const messagesElement = document.getElementById("messages");
@@ -268,6 +291,17 @@
 
         // chat-message event listener
         socket.on("chat-message", (response) => {
+          // messagesFromAllChatroom array 업데이트
+          // 이 채팅방 uuid에 해당하는 json 찾기
+          messagesFromThisChatroom = messagesFromAllChatroom.find((elem) => elem.chatroomUuid === response.data.chatroomUuid);
+
+          // 제일 앞 message element 제거(가장 예전 메시지)
+          messagesFromThisChatroom.chatMessageDtoList.shift();
+
+          // 제일 뒤에 방금 받은 새로운 메시지 insert
+          const { chatroomUuid, ...newMessage } = response.data;
+          messagesFromThisChatroom.chatMessageDtoList.push(newMessage);
+
           // 메시지가 온 채팅방이 현재 보고있는 채팅방인 경우
           if (response.data.chatroomUuid === currentViewingChatroomUuid) {
             // 채팅 메시지 요소 동적 생성
@@ -545,7 +579,7 @@
                                                           <p last-msg-text>${chatroom.lastMsg}</p>
                                                       </div>
                                                       <div>
-                                                          <p last-msg-time>${new Date(chatroom.lastMsgTime).toLocaleString()}</p>
+                                                          <p last-msg-time>${new Date(chatroom.lastMsgAt).toLocaleString()}</p>
                                                           <p data-new-count>${chatroom.notReadMsgCnt}</p>
                                                           <button class="enter-chatroom-btn" data-chatroom-uuid="${chatroom.uuid}">채팅방 입장</button>
                                                       </div>
@@ -626,10 +660,8 @@
 
                 messagesElement.innerHTML = "";
 
-                const sortedMessages = chatroomMessages.chatMessageDtoList.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-
                 // Loop through response data to create message elements
-                sortedMessages.forEach((message) => {
+                chatroomMessages.chatMessageDtoList.forEach((message) => {
                   const li = document.createElement("li");
                   li.classList.add("message-item");
                   if (message.senderId === memberId) {
