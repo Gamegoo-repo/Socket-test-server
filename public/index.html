@@ -154,6 +154,26 @@
       #chatroomList {
         padding-left: 5px;
       }
+
+      #friendsList {
+        list-style-type: none; /* Remove default bullet points */
+        padding: 5px; /* Remove default padding */
+      }
+
+      #friendsList li {
+        display: flex; /* Use flexbox for alignment */
+        align-items: center; /* Center items vertically */
+        padding: 10px 0; /* Add vertical padding for spacing */
+        border-bottom: 1px solid #ccc; /* Add a bottom border */
+      }
+
+      #friendsList li:last-child {
+        border-bottom: none; /* Remove border from the last item */
+      }
+
+      #friendsList img {
+        margin-right: 10px; /* Add space between the image and the text */
+      }
     </style>
   </head>
   <body>
@@ -169,7 +189,8 @@
       <div class="content">
         <div class="column">
           <h2>친구 목록</h2>
-          <ul id="onlineFriends"></ul>
+          <ul id="friendsList"></ul>
+          <button id="fetchFriendsButton">친구 목록 입장</button>
         </div>
         <div class="column">
           <h2>채팅방 목록</h2>
@@ -198,6 +219,7 @@
       const onlineFriends = document.getElementById("onlineFriends");
       const loginStatus = document.getElementById("loginStatus");
       const fetchChatroomBtn = document.getElementById("fetchChatroomsButton");
+      const fetchFriendsButton = document.getElementById("fetchFriendsButton");
 
       // const apiServerUrl = "192.168.0.5"; // 8080서버의 host 주소
       const apiServerUrl = "localhost"; // 8080서버의 host 주소
@@ -610,6 +632,52 @@
           })
           .catch((error) => {
             console.error("Error fetching chatroom data:", error);
+          });
+      });
+
+      fetchFriendsButton.addEventListener("click", () => {
+        const jwtToken = localStorage.getItem("jwtToken");
+        if (!jwtToken) {
+          console.error("JWT token is missing.");
+          return;
+        }
+        fetch(`http://${apiServerUrl}:8080/v1/member/friends`, {
+          headers: {
+            Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.isSuccess) {
+              const friendsList = data.result.friendInfoDtoList;
+              const friendsElement = document.getElementById("friendsList");
+              friendsElement.innerHTML = ""; // Clear previous list
+
+              friendsList.forEach((friend) => {
+                const li = document.createElement("li");
+
+                // Determine status text based on online status
+                const isOnline = onlineFriendMemberIdList.includes(friend.memberId);
+                const statusText = isOnline ? "online" : "offline";
+
+                // Create status element with appropriate class
+                const statusElement = document.createElement("span");
+                statusElement.textContent = `(${statusText})`;
+                statusElement.classList.add(isOnline ? "online" : "offline");
+
+                li.innerHTML = `
+            <img src="${friend.memberProfileImg}" alt="${friend.name}'s profile picture" width="30" height="30">
+            <span>${friend.name}</span>
+          `;
+                li.appendChild(statusElement);
+                friendsElement.appendChild(li);
+              });
+            } else {
+              console.error("Failed to fetch friends list:", data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("Error fetching friends data:", error);
           });
       });
 
