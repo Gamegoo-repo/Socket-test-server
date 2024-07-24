@@ -228,8 +228,8 @@
       let onlineFriendMemberIdList = []; // 현재 온라인인 친구의 memberId 저장
       let currentViewingChatroomUuid = null; // 현재 이 사용자가 보고 있는 채팅방의 uuid 저장
       let currentChattingMemberId = null; // 현재 이 사용자가 보고 있는 채팅방의 상대 memberId 저장
-      //let messagesFromAllChatroom = []; // 이 사용자가 속한 모든 채팅방의 uuid 및 최근 대화내용 20개 저장
       let messagesFromThisChatroom = []; // 현재 보고 있는 채팅방의 메시지 목록
+      let hasNextChat = false; // 채팅 내역 조회를 위해, 다음 채팅내역이 존재하는지 여부 저장
 
       function connectSocket(jwtToken = null) {
         const options = jwtToken ? { auth: { token: jwtToken } } : {};
@@ -252,32 +252,6 @@
             const msg = input.value;
             socket.emit("chat-message", { uuid: currentViewingChatroomUuid, message: msg });
             input.value = "";
-
-            // // messagesFromAllChatroom array 업데이트
-            // // 이 채팅방 uuid에 해당하는 json 찾기
-            // messagesFromThisChatroom = messagesFromAllChatroom.find((elem) => elem.chatroomUuid === currentViewingChatroomUuid);
-
-            // // 제일 앞 message element 제거(가장 예전 메시지)
-            // messagesFromThisChatroom.chatMessageDtoList.shift();
-
-            // // 제일 뒤에 방금 보낸 새로운 메시지 insert
-            // // 현재 날짜와 시간
-            // const now = new Date();
-
-            // // ISO 8601 형식의 문자열로 변환
-            // const isoString = getLocalISOString(now);
-
-            // // 내 메시지 element 생성
-            // const newMessage = {
-            //   createdAt: isoString,
-            //   message: msg,
-            //   senderId: memberId,
-            //   senderName: localStorage.getItem("name"),
-            //   senderProfileImg: localStorage.getItem("profileImg"),
-            // };
-            // messagesFromThisChatroom.chatMessageDtoList.push(newMessage);
-            // console.log(" ================ messagesFromThisChatroom updated =================");
-            // console.log(messagesFromThisChatroom);
           }
         });
 
@@ -338,7 +312,7 @@
             messagesFromThisChatroom.push(newMessage);
 
             console.log("============== messagesFromThisChatroom Updated ==============");
-            cosole.log(messagesFromThisChatroom);
+            console.log(messagesFromThisChatroom);
 
             // 채팅 메시지 요소 동적 생성
             const messagesElement = document.getElementById("messages");
@@ -377,7 +351,7 @@
 
             // 8080에게 해당 채팅 메시지를 읽었음 요청 전송
             const jwtToken = localStorage.getItem("jwtToken");
-            fetch(`http://${apiServerUrl}:8080/v1/chatroom/${currentViewingChatroomUuid}/read?${response.data.timestamp}`, {
+            fetch(`http://${apiServerUrl}:8080/v1/chatroom/${currentViewingChatroomUuid}/read?timestamp=${response.data.timestamp}`, {
               headers: {
                 Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
               },
@@ -539,9 +513,6 @@
                   }
                 })
                 .catch((error) => console.error("Error:", error));
-
-              // 8080 서버로 나의 모든 채팅방의 최근 대화 내용 20개 조회 요청
-              //fetchMessages(jwtToken);
 
               // 3000 서버로 api 요청(소켓 초기화를 위함)
               fetch("/login", {
@@ -710,7 +681,8 @@
           return;
         }
 
-        // Fetch chatroom details to get targetMemberImg and targetMemberName
+        // 해당 채팅방에 입장해, 채팅 상대 회원 정보 받아오기
+        // 근데 이렇게 안해도 되긴 함.. 채팅방 목록 element가 갖고 있는 정보를 보여줘도 될듯. 다만 채팅방에 입장했다는 사실은 8080에게 알려야 함
         fetch(`http://${apiServerUrl}:8080/v1/chat/${chatroomUuid}`, {
           headers: {
             Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
@@ -749,9 +721,6 @@
               currentViewingChatroomUuid = chatroomUuid;
               currentChattingMemberId = targetMemberData.memberId;
 
-              // // messagesFromAllChatroom array에서 저장하고 있던 대화 내역 20개 렌더링
-              // const chatroomMessages = messagesFromAllChatroom.find((chatroom) => chatroom.chatroomUuid === chatroomUuid);
-
               // 입장한 chatroom의 메시지 내역 조회 api 요청
               fetch(`http://${apiServerUrl}:8080/v1/chat/${chatroomUuid}/messages`, {
                 headers: {
@@ -761,6 +730,15 @@
                 .then((response) => response.json())
                 .then((data) => {
                   if (data.isSuccess && data.result) {
+                    // messagesFromThisChatroom array 업데이트
+                    messagesFromThisChatroom = data.result.chatMessageDtoList;
+
+                    console.log("============== fetch chat messages result ===============");
+                    console.log(data.result);
+
+                    // hasNextChat 업데이트
+                    hasNextChat = data.result.has_next;
+
                     // Clear existing messages
                     const messagesElement = document.getElementById("messages");
                     const shouldScrollToBottom = messagesElement.scrollTop === messagesElement.scrollHeight - messagesElement.clientHeight;
@@ -791,12 +769,6 @@
                     if (shouldScrollToBottom || messagesElement.children.length === 0) {
                       messagesElement.scrollTop = messagesElement.scrollHeight;
                     }
-
-                    // messagesFromThisChatroom array 업데이트
-                    messagesFromThisChatroom = data.result.chatMessageDtoList;
-
-                    console.log("============== fetch chat messages result ===============");
-                    console.log(data.result);
                   } else {
                     // 입장한 chatroom의 메시지 내역 조회 api 요청 실패
                     console.error("Failed to fetch chat messages", data.message);
@@ -805,69 +777,12 @@
                 .catch((error) => {
                   console.error("Error fetching chat messages:", error);
                 });
-
-              // if (chatroomMessages && chatroomMessages.chatMessageDtoList) {
-              //   // Clear existing messages
-              //   const messagesElement = document.getElementById("messages");
-              //   const shouldScrollToBottom = messagesElement.scrollTop === messagesElement.scrollHeight - messagesElement.clientHeight;
-
-              //   messagesElement.innerHTML = "";
-
-              //   // Loop through response data to create message elements
-              //   chatroomMessages.chatMessageDtoList.forEach((message) => {
-              //     const li = document.createElement("li");
-              //     li.classList.add("message-item");
-              //     if (message.senderId === memberId) {
-              //       li.classList.add("mine");
-              //     }
-              //     li.innerHTML = `
-              //       <div class="message-content">
-              //         <img src="${message.senderProfileImg}" alt="Profile Image" width="30" height="30">
-              //         <div>
-              //           <p class="sender-name">${message.senderName}</p>
-              //           <p class="message-text">${message.message}</p>
-              //           <p class="message-time">${new Date(message.createdAt).toLocaleString()}</p>
-              //         </div>
-              //       </div>
-              //     `;
-              //     messagesElement.appendChild(li);
-              //   });
-
-              //   // Scroll to bottom if was already at bottom before fetching new messages or on initial load
-              //   if (shouldScrollToBottom || messagesElement.children.length === 0) {
-              //     messagesElement.scrollTop = messagesElement.scrollHeight;
-              //   }
-              // } else {
-              //   console.error("Failed to find chatroom messages in stored data.");
-              // }
             } else {
               console.error("Failed to fetch chatroom details.", data.message);
             }
           })
           .catch((error) => {
             console.error("Error fetching chatroom details:", error);
-          });
-      }
-
-      function fetchMessages(jwtToken) {
-        fetch(`http://${apiServerUrl}:8080/v1/member/chatroom/messages`, {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${jwtToken}`,
-            "Content-Type": "application/json",
-          },
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.isSuccess) {
-              messagesFromAllChatroom = data.result; // 전역변수 업데이트
-              console.log(messagesFromAllChatroom);
-            } else {
-              console.error(`Error: ${data.message}`);
-            }
-          })
-          .catch((error) => {
-            console.error("Error fetching /v1/member/chatroom/messages:", error);
           });
       }
 
@@ -915,12 +830,18 @@
 
         messagesElement.addEventListener("scroll", () => {
           if (messagesElement.scrollTop === 0) {
-            fetchOlderMessages();
+            // 스크롤이 끝까지 올라갔을 때
+            if (hasNextChat) {
+              // 더 조회해올 다음 chat 내역이 있다면
+              fetchOlderMessages();
+            } else {
+              console.log("=== End of Chat Messages, No fecth ==");
+            }
           }
         });
       });
 
-      // 대화 내용 조회 api 호출 및 렌더링 // 수정 필요
+      // timestamp cursor 기반으로 이전 메시지 내역 조회 api 호출
       function fetchOlderMessages() {
         const jwtToken = localStorage.getItem("jwtToken");
         if (!jwtToken) {
@@ -928,15 +849,15 @@
           return;
         }
 
-        // 가장 앞에 있는 메시지의 message-time을 가져오기
-        const firstMessageLi = document.querySelector("#messages li:first-child .message-time");
-        if (!firstMessageLi) {
-          console.error("No messages found to get the date from.");
-          return;
+        let firstMessage;
+        // 가장 앞에 있는 메시지의 timestamp를 가져오기
+        if (messagesFromThisChatroom.length > 0) {
+          firstMessage = messagesFromThisChatroom[0];
+        } else {
+          console.log("messagesFromThisChatroom array is Empty");
         }
-        const date = new Date(firstMessageLi.textContent.trim()).toISOString();
 
-        fetch(`http://${apiServerUrl}:8080/v1/chat/${currentViewingChatroomUuid}/older-messages?date=${encodeURIComponent(date)}`, {
+        fetch(`http://${apiServerUrl}:8080/v1/chat/${currentViewingChatroomUuid}/messages?cursor=${firstMessage.timestamp}`, {
           headers: {
             Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
           },
@@ -944,13 +865,24 @@
           .then((response) => response.json())
           .then((data) => {
             if (data.isSuccess && data.result) {
-              const olderMessages = data.result;
+              const olderMessages = data.result.chatMessageDtoList;
 
-              // 기존 메시지 목록 앞에 새로 불러온 메시지 추가
+              // messagesFromThisChatroom array 맨 앞에 새로 조회해온 orderMessages 추가
+              // olderMessages 배열을 messagesFromThisChatroom 배열의 맨 앞에 추가
+              const updatedMessages = olderMessages.concat(messagesFromThisChatroom);
+              messagesFromThisChatroom = updatedMessages;
+
+              console.log("===================== fetxh OlderMessages, updated messagesFromThisChatroom ==================");
+              console.log(messagesFromThisChatroom);
+
+              // hasNextChat 업데이트
+              hasNextChat = data.result.has_next;
+
+              // 기존 메시지 목록 앞에 새로 불러온 메시지 추가 렌더링
               const messagesElement = document.getElementById("messages");
               const scrollPosition = messagesElement.scrollHeight; // 현재 스크롤 위치 저장
 
-              olderMessages.forEach((message) => {
+              olderMessages.reverse().forEach((message) => {
                 const li = document.createElement("li");
                 li.classList.add("message-item");
                 if (message.senderId === memberId) {
@@ -980,40 +912,8 @@
           });
       }
 
-      function getLocalISOString(date) {
-        // ISO 8601 형식의 로컬 시간 문자열로 변환 (밀리초 6자리)
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0"); // 월은 0부터 시작하므로 +1
-        const day = String(date.getDate()).padStart(2, "0");
-        const hours = String(date.getHours()).padStart(2, "0");
-        const minutes = String(date.getMinutes()).padStart(2, "0");
-        const seconds = String(date.getSeconds()).padStart(2, "0");
-        const milliseconds = String(date.getMilliseconds()).padStart(3, "0") + "000"; // 밀리초를 6자리로 맞춤
-
-        const isoString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.${milliseconds.slice(0, 6)}`;
-
-        return isoString;
-      }
-
-      function getUtcTimestamp() {
-        const now = new Date();
-        const utcTimestamp = Date.UTC(
-          now.getUTCFullYear(),
-          now.getUTCMonth(),
-          now.getUTCDate(),
-          now.getUTCHours(),
-          now.getUTCMinutes(),
-          now.getUTCSeconds(),
-          now.getUTCMilliseconds()
-        );
-        return utcTimestamp;
-      }
-
       window.addEventListener("load", () => {
         const jwtToken = localStorage.getItem("jwtToken");
-        // if (jwtToken) {
-        //   fetchMessages(jwtToken);
-        // }
         connectSocket(jwtToken);
       });
     </script>
