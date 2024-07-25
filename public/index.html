@@ -250,6 +250,7 @@
           e.preventDefault();
           if (input.value) {
             const msg = input.value;
+            // (#10-1) "chat-message" event emit
             socket.emit("chat-message", { uuid: currentViewingChatroomUuid, message: msg });
             input.value = "";
           }
@@ -257,7 +258,7 @@
 
         // my-message-broadcast-success event listener
         socket.on("my-message-broadcast-success", (response) => {
-          // messagesFromThisChatroom array 업데이트
+          // (#10-6) messagesFromThisChatroom array 업데이트
           const { chatroomUuid, ...newMessage } = response.data;
 
           messagesFromThisChatroom.push(newMessage);
@@ -265,7 +266,7 @@
           console.log("============== messagesFromThisChatroom Updated ==============");
           console.log(messagesFromThisChatroom);
 
-          // 내가 보낸 메시지 요소 생성
+          // (#10-7) 내가 보낸 메시지 요소 생성
           const messagesElement = document.getElementById("messages");
           const li = document.createElement("li");
           li.classList.add("message-item");
@@ -282,6 +283,7 @@
                                             `;
           messagesElement.appendChild(li);
 
+          // (#10-8) 채팅방 목록 내 element 업데이트
           // 채팅방 목록 내의 마지막 전송시각 업데이트
           const chatroomItemLastTime = document.querySelector(`.chatroom-item[data-chatroom-uuid="${currentViewingChatroomUuid}"] p[last-msg-time]`);
           if (chatroomItemLastTime) {
@@ -306,7 +308,7 @@
         socket.on("chat-message", (response) => {
           // 메시지가 온 채팅방이 현재 보고있는 채팅방인 경우
           if (response.data.chatroomUuid === currentViewingChatroomUuid) {
-            // messagesFromThisChatroom array 업데이트
+            // (#11-2) messagesFromThisChatroom array 업데이트
             const { chatroomUuid, ...newMessage } = response.data;
 
             messagesFromThisChatroom.push(newMessage);
@@ -314,7 +316,7 @@
             console.log("============== messagesFromThisChatroom Updated ==============");
             console.log(messagesFromThisChatroom);
 
-            // 채팅 메시지 요소 동적 생성
+            // (#11-3) 채팅 메시지 요소 동적 생성
             const messagesElement = document.getElementById("messages");
             const li = document.createElement("li");
             li.classList.add("message-item");
@@ -333,23 +335,7 @@
                                             `;
             messagesElement.appendChild(li);
 
-            // 채팅방 목록 내의 마지막 전송시각 업데이트
-            const chatroomItemLastTime = document.querySelector(`.chatroom-item[data-chatroom-uuid="${currentViewingChatroomUuid}"] p[last-msg-time]`);
-            if (chatroomItemLastTime) {
-              chatroomItemLastTime.textContent = `${new Date(response.data.createdAt).toLocaleString()}`;
-            } else {
-              console.error(`Could not find chatroom item with UUID ${currentViewingChatroomUuid} to update last msg time.`);
-            }
-
-            // 채팅방 목록 내의 마지막 메시지 업데이트
-            const chatroomItemLastMsg = document.querySelector(`.chatroom-item[data-chatroom-uuid="${currentViewingChatroomUuid}"] p[last-msg-text]`);
-            if (chatroomItemLastMsg) {
-              chatroomItemLastMsg.textContent = response.data.message;
-            } else {
-              console.error(`Could not find chatroom item with UUID ${currentViewingChatroomUuid} to update last msg text.`);
-            }
-
-            // 8080에게 해당 채팅 메시지를 읽었음 요청 전송
+            // (#11-4) 8080에게 해당 채팅 메시지를 읽었음 요청 전송
             const jwtToken = localStorage.getItem("jwtToken");
             fetch(`http://${apiServerUrl}:8080/v1/chatroom/${currentViewingChatroomUuid}/read?timestamp=${response.data.timestamp}`, {
               headers: {
@@ -358,24 +344,7 @@
             });
           } else {
             // 내가 보고있는 채팅방에서 온 메시지가 아닌 경우
-
-            // 채팅방 목록 내의 마지막 전송시각 업데이트
-            const chatroomItemLastTime = document.querySelector(`.chatroom-item[data-chatroom-uuid="${response.data.chatroomUuid}"] p[last-msg-time]`);
-            if (chatroomItemLastTime) {
-              chatroomItemLastTime.textContent = `${new Date(response.data.createdAt).toLocaleString()}`;
-            } else {
-              console.error(`Could not find chatroom item with UUID ${response.data.chatroomUuid} to update last msg time.`);
-            }
-
-            // 채팅방 목록 내의 마지막 메시지 업데이트
-            const chatroomItemLastMsg = document.querySelector(`.chatroom-item[data-chatroom-uuid="${response.data.chatroomUuid}"] p[last-msg-text]`);
-            if (chatroomItemLastMsg) {
-              chatroomItemLastMsg.textContent = response.data.message;
-            } else {
-              console.error(`Could not find chatroom item with UUID ${response.data.chatroomUuid} to update last msg text.`);
-            }
-
-            // 해당 메시지의 전송자가 내가 아닌 경우에만 채팅방 목록 내의 읽지 않은 메시지 개수 업데이트
+            // (#11-6) 해당 메시지의 전송자가 내가 아닌 경우에만 채팅방 목록 내의 읽지 않은 메시지 개수 업데이트
             if (response.data.senderId != memberId) {
               const chatroomItemNewCnt = document.querySelector(`.chatroom-item[data-chatroom-uuid="${response.data.chatroomUuid}"] p[data-new-count]`);
               if (chatroomItemNewCnt) {
@@ -387,39 +356,25 @@
               }
             }
           }
+
+          // (#11-7) 채팅방 목록 element 업데이트
+          // 채팅방 목록 내의 마지막 전송시각 업데이트
+          const chatroomItemLastTime = document.querySelector(`.chatroom-item[data-chatroom-uuid="${response.data.chatroomUuid}"] p[last-msg-time]`);
+          if (chatroomItemLastTime) {
+            chatroomItemLastTime.textContent = `${new Date(response.data.createdAt).toLocaleString()}`;
+          } else {
+            console.error(`Could not find chatroom item with UUID ${response.data.chatroomUuid} to update last msg time.`);
+          }
+
+          // 채팅방 목록 내의 마지막 메시지 업데이트
+          const chatroomItemLastMsg = document.querySelector(`.chatroom-item[data-chatroom-uuid="${response.data.chatroomUuid}"] p[last-msg-text]`);
+          if (chatroomItemLastMsg) {
+            chatroomItemLastMsg.textContent = response.data.message;
+          } else {
+            console.error(`Could not find chatroom item with UUID ${response.data.chatroomUuid} to update last msg text.`);
+          }
           // 채팅방 목록 li 요소 재정렬
           reorderChatroomsByLastMsgTime();
-        });
-
-        // friend-online event listener
-        socket.on("friend-online", (response) => {
-          // 친구 목록의 온라인 여부 html 변경
-          const li = document.querySelector(`li[data-member-id='${response.data.memberId}']`);
-
-          if (li) {
-            const statusElement = li.querySelector("span.offline");
-            if (statusElement) {
-              statusElement.textContent = "(online)";
-              statusElement.classList.remove("offline");
-              statusElement.classList.add("online");
-            }
-          }
-
-          // 현재 온라인인 친구 목록 업데이트
-          onlineFriendMemberIdList.push(response.data.memberId);
-          console.log("current online Friend Member Id List:", onlineFriendMemberIdList);
-
-          // 현재 채팅 중인 (채팅창을 보고있는) memberId와 동일한 경우 상태 텍스트 변경
-          console.log("friend-online listener: currentChattingMemberId is.. ", currentChattingMemberId);
-          if (currentChattingMemberId === response.data.memberId) {
-            const chatroomHeader = document.querySelector(".column.chatroom h2");
-            const statusElement = chatroomHeader.querySelector("span");
-            if (statusElement) {
-              statusElement.textContent = "(online)";
-              statusElement.classList.remove("offline");
-              statusElement.classList.add("online");
-            }
-          }
         });
 
         // member-info event listener
@@ -440,10 +395,41 @@
           console.log("Online Friend Member ID List:", onlineFriendMemberIdList);
         });
 
+        // friend-online event listener
+        socket.on("friend-online", (response) => {
+          // (#4-2) 친구 목록의 온라인 여부 html 변경
+          const li = document.querySelector(`li[data-member-id='${response.data.memberId}']`);
+
+          if (li) {
+            const statusElement = li.querySelector("span.offline");
+            if (statusElement) {
+              statusElement.textContent = "(online)";
+              statusElement.classList.remove("offline");
+              statusElement.classList.add("online");
+            }
+          }
+
+          // (#4-3) 현재 온라인인 친구 목록 업데이트
+          onlineFriendMemberIdList.push(response.data.memberId);
+          console.log("current online Friend Member Id List:", onlineFriendMemberIdList);
+
+          // (#4-4) 현재 채팅 중인 (채팅창을 보고있는) memberId와 동일한 경우 상태 텍스트 변경
+          console.log("friend-online listener: currentChattingMemberId is.. ", currentChattingMemberId);
+          if (currentChattingMemberId === response.data.memberId) {
+            const chatroomHeader = document.querySelector(".column.chatroom h2");
+            const statusElement = chatroomHeader.querySelector("span");
+            if (statusElement) {
+              statusElement.textContent = "(online)";
+              statusElement.classList.remove("offline");
+              statusElement.classList.add("online");
+            }
+          }
+        });
+
         // friend-offline event listener
         socket.on("friend-offline", (response) => {
           const memberId = response.data.memberId;
-          // 친구 목록의 온라인 여부 html 변경
+          // (#5-2) 친구 목록의 온라인 여부 html 변경
           const li = document.querySelector(`li[data-member-id='${response.data.memberId}']`);
 
           if (li) {
@@ -455,13 +441,13 @@
             }
           }
 
-          // onlineFriendMemberIdList에서 해당 memberId 제거
+          // (#5-3) onlineFriendMemberIdList에서 해당 memberId 제거
           onlineFriendMemberIdList = onlineFriendMemberIdList.filter((id) => id !== memberId);
 
           console.log(`Friend ID: ${memberId} is offline`);
           console.log("Updated online Friend Member Id List:", onlineFriendMemberIdList);
 
-          // 현재 채팅 중인 memberId와 동일한 경우 상태 텍스트 변경
+          // (#5-4) 현재 채팅 중인 memberId와 동일한 경우 상태 텍스트 변경
           if (currentChattingMemberId === memberId) {
             const chatroomHeader = document.querySelector(".column.chatroom h2");
             const statusElement = chatroomHeader.querySelector("span");
@@ -474,6 +460,7 @@
         });
       }
 
+      // 로그인 버튼 클릭 시
       loginButton.addEventListener("click", () => {
         const userId = userIdInput.value;
         if (!userId) {
@@ -541,6 +528,7 @@
           .catch((error) => console.error("Error:", error));
       });
 
+      // 로그아웃 버튼 클릭 시
       logoutButton.addEventListener("click", () => {
         // 로그아웃 버튼 클릭 이벤트 추가
         const jwtToken = localStorage.getItem("jwtToken");
@@ -549,6 +537,7 @@
           return;
         }
 
+        // (#7-3) 3000서버에 logout api 호출
         // 8080으로 먼저 logout 요청 보내는게 맞지만, 여기서는 일단 3000으로만 보낸다
         fetch("/logout", {
           method: "POST",
@@ -562,6 +551,7 @@
           .then((data) => {
             if (data.isSuccess) {
               alert("Logout successful!");
+              // (#7-6) localStorage에서 jwt 삭제
               localStorage.removeItem("jwtToken");
               // 로그아웃 후 페이지 새로고침 또는 다른 후속 조치
               location.reload();
@@ -572,6 +562,7 @@
           .catch((error) => console.error("Error:", error));
       });
 
+      // 채팅방 목록 버튼 클릭 시
       fetchChatroomBtn.addEventListener("click", () => {
         const jwtToken = localStorage.getItem("jwtToken");
         if (!jwtToken) {
@@ -579,6 +570,7 @@
           return;
         }
 
+        // (#8-1) 채팅방 목록 조회 api 요청
         fetch(`http://${apiServerUrl}:8080/v1/member/chatroom`, {
           headers: {
             Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
@@ -586,16 +578,18 @@
         })
           .then((response) => response.json())
           .then((data) => {
+            // (#8-2) 채팅방 목록 조회 성공 응답 받음
             if (data.isSuccess && data.result) {
-              // Clear existing chatroom elements
+              // 채팅방 목록 element 초기화
               const chatroomListElement = document.getElementById("chatroomList");
               chatroomListElement.innerHTML = "";
 
-              // Loop through response data to create chatroom list elements
+              // (#8-3) 채팅방 목록 렌더링
+              // api result data를 돌면서 html 요소 생성
               data.result.forEach((chatroom) => {
                 const li = document.createElement("li");
                 li.classList.add("chatroom-item");
-                li.setAttribute("data-chatroom-uuid", chatroom.uuid); // Add data-chatroom-uuid attribute
+                li.setAttribute("data-chatroom-uuid", chatroom.uuid); // data-chatroom-uuid 값 세팅
 
                 li.innerHTML = `
                                                             <div>
@@ -614,7 +608,7 @@
                 chatroomListElement.appendChild(li);
               });
 
-              // Add event listeners to the "Enter Chatroom" buttons
+              // 채팅방 입장 버튼에 eventListener 추가
               const enterChatroomButtons = document.querySelectorAll(".enter-chatroom-btn");
               enterChatroomButtons.forEach((button) => {
                 button.addEventListener("click", (event) => {
@@ -631,12 +625,14 @@
           });
       });
 
+      // 친구목록 조회 버튼 클릭 시
       fetchFriendsButton.addEventListener("click", () => {
         const jwtToken = localStorage.getItem("jwtToken");
         if (!jwtToken) {
           console.error("JWT token is missing.");
           return;
         }
+        // (#3-1) 친구 목록 조회 api 요청
         fetch(`http://${apiServerUrl}:8080/v1/member/friends`, {
           headers: {
             Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
@@ -644,25 +640,26 @@
         })
           .then((response) => response.json())
           .then((data) => {
+            // (#3-2) 친구 목록 조회 성공 응답 받음
             if (data.isSuccess) {
               const friendsList = data.result.friendInfoDtoList;
               const friendsElement = document.getElementById("friendsList");
-              friendsElement.innerHTML = ""; // Clear previous list
+              friendsElement.innerHTML = ""; // 이전 친구목록 element 비우기
 
+              // (#3-3) 친구 목록 화면 렌더링
               friendsList.forEach((friend) => {
                 const li = document.createElement("li");
 
-                // Determine status text based on online status
+                // onlineFriendMemberIdList에 존재하는 회원인지 (해당 회원이 현재 온라인인지)에 따라 상태 text 배정
                 const isOnline = onlineFriendMemberIdList.includes(friend.memberId);
                 const statusText = isOnline ? "online" : "offline";
 
-                // Create status element with appropriate class
+                // 접속 상태 element 생성 및 class 부여
                 const statusElement = document.createElement("span");
                 statusElement.textContent = `(${statusText})`;
                 statusElement.classList.add(isOnline ? "online" : "offline");
 
                 li.setAttribute("data-member-id", friend.memberId);
-
                 li.innerHTML = `
                   <img src="${friend.memberProfileImg}" alt="${friend.name}'s profile picture" width="30" height="30">
                   <span>${friend.name}</span>
@@ -679,6 +676,7 @@
           });
       });
 
+      // 채팅방 입장 시
       function enterChatroom(chatroomUuid) {
         console.log(`Entering chatroom with UUID: ${chatroomUuid}`);
         const jwtToken = localStorage.getItem("jwtToken");
@@ -687,7 +685,7 @@
           return;
         }
 
-        // 입장한 chatroom의 메시지 내역 조회 api 요청
+        // (#9-1) 입장한 chatroom의 메시지 내역 조회 api 요청
         fetch(`http://${apiServerUrl}:8080/v1/chat/${chatroomUuid}/messages`, {
           headers: {
             Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
@@ -695,70 +693,24 @@
         })
           .then((response) => response.json())
           .then((data) => {
+            // (#9-2) 메시지 내역 조회 정상 응답 받음
             if (data.isSuccess && data.result) {
-              // messagesFromThisChatroom array 업데이트
+              // (#9-3) messagesFromThisChatroom array 초기화
               messagesFromThisChatroom = data.result.chatMessageDtoList;
 
               console.log("============== fetch chat messages result ===============");
               console.log(data.result);
 
-              // hasNextChat 업데이트
+              // (#9-4) hasNextChat 업데이트
               hasNextChat = data.result.has_next;
 
-              // 해당 채팅방에 입장해, 채팅 상대 회원 정보 받아오기
-              // 근데 이렇게 안해도 되긴 함.. 채팅방 목록 element가 갖고 있는 정보를 보여줘도 될듯. 다만 채팅방에 입장했다는 사실은 8080에게 알려야 함
-              fetch(`http://${apiServerUrl}:8080/v1/chat/${chatroomUuid}`, {
-                headers: {
-                  Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
-                },
-              })
-                .then((response) => response.json())
-                .then((data) => {
-                  if (data.isSuccess && data.result) {
-                    const targetMemberData = data.result;
-
-                    // Update chatroom header
-                    const chatroomHeader = document.querySelector(".column.chatroom h2");
-
-                    // Determine status text based on online status
-                    const isOnline = onlineFriendMemberIdList.includes(targetMemberData.memberId);
-                    const statusText = isOnline ? "online" : "offline";
-
-                    // Create status element with appropriate class
-                    const statusElement = document.createElement("span");
-                    statusElement.textContent = `(${statusText})`;
-                    statusElement.classList.add(isOnline ? "online" : "offline");
-
-                    // Update chatroom header with profile image, name, and status element
-                    chatroomHeader.innerHTML = `<img src="${targetMemberData.memberProfileImg}" alt="Profile Image" width="30" height="30" style="vertical-align: middle;">${targetMemberData.name}`;
-                    chatroomHeader.appendChild(statusElement);
-
-                    // Update the new count to 0
-                    const chatroomItem = document.querySelector(`.chatroom-item[data-chatroom-uuid="${chatroomUuid}"] p[data-new-count]`);
-                    if (chatroomItem) {
-                      chatroomItem.textContent = "0";
-                    } else {
-                      console.error(`Could not find chatroom item with UUID ${chatroomUuid} to update new count.`);
-                    }
-
-                    // 현재 보고 있는 채팅방 uuid, 채팅 중인 memberId 업데이트
-                    currentViewingChatroomUuid = chatroomUuid;
-                    currentChattingMemberId = targetMemberData.memberId;
-                  } else {
-                    console.error("Failed to fetch chatroom details.", data.message);
-                  }
-                })
-                .catch((error) => {
-                  console.error("Error fetching chatroom details:", error);
-                });
-
-              // Clear existing messages
+              // 기존 메시지 element 초기화
               const messagesElement = document.getElementById("messages");
               const shouldScrollToBottom = messagesElement.scrollTop === messagesElement.scrollHeight - messagesElement.clientHeight;
 
               messagesElement.innerHTML = "";
 
-              // messagesFromThisChatroom의 각 messgae 요소 렌더링
+              // (#9-5) messagesFromThisChatroom의 각 messgae 요소 렌더링
               messagesFromThisChatroom.forEach((message) => {
                 const li = document.createElement("li");
                 li.classList.add("message-item");
@@ -783,7 +735,7 @@
                 messagesElement.scrollTop = messagesElement.scrollHeight;
               }
 
-              // 해당 채팅방에 입장해, 채팅 상대 회원 정보 받아오기
+              // (#9-6) 해당 채팅방에 입장 요청 api 호출, 채팅 상대 회원 정보 받아오기 + 입장 처리
               // 근데 이렇게 안해도 되긴 함.. 채팅방 목록 element가 갖고 있는 정보를 보여줘도 될듯. 다만 채팅방에 입장했다는 사실은 8080에게 알려야 함
               fetch(`http://${apiServerUrl}:8080/v1/chat/${chatroomUuid}`, {
                 headers: {
@@ -792,26 +744,27 @@
               })
                 .then((response) => response.json())
                 .then((data) => {
+                  // (#9-7) 채팅 상대 회원 정보 성공 응답 받음
                   if (data.isSuccess && data.result) {
                     const targetMemberData = data.result;
 
-                    // Update chatroom header
+                    // (#9-8) 채팅방 내부 헤더 렌더링
                     const chatroomHeader = document.querySelector(".column.chatroom h2");
 
-                    // Determine status text based on online status
+                    // 상대 회원이 현재 온라인인 친구 목록에 있는지 여부를 따져서 상태 text 설정
                     const isOnline = onlineFriendMemberIdList.includes(targetMemberData.memberId);
                     const statusText = isOnline ? "online" : "offline";
 
-                    // Create status element with appropriate class
+                    // 상태 element에 class 부여
                     const statusElement = document.createElement("span");
                     statusElement.textContent = `(${statusText})`;
                     statusElement.classList.add(isOnline ? "online" : "offline");
 
-                    // Update chatroom header with profile image, name, and status element
+                    // 헤더의 profile image, name, 상태 element 업데이트
                     chatroomHeader.innerHTML = `<img src="${targetMemberData.memberProfileImg}" alt="Profile Image" width="30" height="30" style="vertical-align: middle;">${targetMemberData.name}`;
                     chatroomHeader.appendChild(statusElement);
 
-                    // Update the new count to 0
+                    // (#9-9) 채팅방 목록에 읽지 않은 메시지 개수를 0으로 업데이트
                     const chatroomItem = document.querySelector(`.chatroom-item[data-chatroom-uuid="${chatroomUuid}"] p[data-new-count]`);
                     if (chatroomItem) {
                       chatroomItem.textContent = "0";
@@ -819,7 +772,7 @@
                       console.error(`Could not find chatroom item with UUID ${chatroomUuid} to update new count.`);
                     }
 
-                    // 현재 보고 있는 채팅방 uuid, 채팅 중인 memberId 업데이트
+                    // (#9-10) 현재 보고 있는 채팅방 uuid, 채팅 중인 memberId 업데이트
                     currentViewingChatroomUuid = chatroomUuid;
                     currentChattingMemberId = targetMemberData.memberId;
                   } else {
@@ -877,7 +830,7 @@
         return new Date(year, month, day, hour, minute, second);
       }
 
-      // 채팅방에서 가장 위로 스크롤 시 이전 대화내용 요청 api 호출
+      // 채팅방 내부에서 스크롤이 가장 위에 닿았을 때
       document.addEventListener("DOMContentLoaded", () => {
         const messagesElement = document.getElementById("messages");
 
@@ -903,13 +856,14 @@
         }
 
         let firstMessage;
-        // 가장 앞에 있는 메시지의 timestamp를 가져오기
+        // (#12-1) 가장 앞에 있는 메시지의 timestamp를 가져오기
         if (messagesFromThisChatroom.length > 0) {
           firstMessage = messagesFromThisChatroom[0];
         } else {
           console.log("messagesFromThisChatroom array is Empty");
         }
 
+        // (#12-2) timestamp cursor를 담아 다음 메시지 조회 api 요청
         fetch(`http://${apiServerUrl}:8080/v1/chat/${currentViewingChatroomUuid}/messages?cursor=${firstMessage.timestamp}`, {
           headers: {
             Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
@@ -917,10 +871,11 @@
         })
           .then((response) => response.json())
           .then((data) => {
+            // (#12-3) 다음 메시지 조회 성공 응답 받음
             if (data.isSuccess && data.result) {
               const olderMessages = data.result.chatMessageDtoList;
 
-              // messagesFromThisChatroom array 맨 앞에 새로 조회해온 orderMessages 추가
+              // (#12-4) messagesFromThisChatroom array 맨 앞에 새로 조회해온 orderMessages 추가
               // olderMessages 배열을 messagesFromThisChatroom 배열의 맨 앞에 추가
               const updatedMessages = olderMessages.concat(messagesFromThisChatroom);
               messagesFromThisChatroom = updatedMessages;
@@ -928,10 +883,10 @@
               console.log("===================== fetxh OlderMessages, updated messagesFromThisChatroom ==================");
               console.log(messagesFromThisChatroom);
 
-              // hasNextChat 업데이트
+              //(#12-5) hasNextChat 업데이트
               hasNextChat = data.result.has_next;
 
-              // 기존 메시지 목록 앞에 새로 불러온 메시지 추가 렌더링
+              // (#12-6) 기존 메시지 목록 앞에 새로 불러온 메시지 추가 렌더링
               const messagesElement = document.getElementById("messages");
               const scrollPosition = messagesElement.scrollHeight; // 현재 스크롤 위치 저장
 
