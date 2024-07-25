@@ -234,7 +234,7 @@
       function connectSocket(jwtToken = null) {
         const options = jwtToken ? { auth: { token: jwtToken } } : {};
 
-        socket = io(options);
+        socket = io(options); // (#1-1), (#2-1) socket connection 생성
 
         socket.on("connect", () => {
           console.log("Connected to server. Socket ID:", socket.id);
@@ -422,15 +422,17 @@
           }
         });
 
+        // member-info event listener
         socket.on("member-info", (response) => {
           loginStatus.textContent = "You are Login User, member Id: " + response.data.memberId;
 
-          // 전역변수 초기화
+          // (#1-11),(#2-4) memberId 전역변수 초기화
           memberId = response.data.memberId;
         });
 
-        // 현재 온라인인 친구 목록 초기화
+        // init-online-friend-list event listener
         socket.on("init-online-friend-list", (response) => {
+          // (#1-21),(#2-13) 현재 온라인인 친구 목록 초기화
           onlineFriendMemberIdList = response.data.onlineFriendMemberIdList;
 
           // 로그 확인
@@ -479,6 +481,7 @@
           return;
         }
 
+        // (#1-2) 8080서버로 로그인 요청 보내 jwt 토큰 발급받기
         fetch(`http://${apiServerUrl}:8080/v1/auth/login`, {
           method: "POST",
           headers: {
@@ -491,15 +494,16 @@
         })
           .then((response) => response.json())
           .then((data) => {
+            // (#1-3) 8080서버로부터 jwt 토큰 정상 응답 받음
             if (data.isSuccess && data.result.accessToken) {
-              // jwt 토큰 localStorage에 저장
+              // (#1-4) jwt 토큰 localStorage에 저장
               const jwtToken = data.result.accessToken;
               localStorage.setItem("jwtToken", jwtToken);
 
               alert("Login successful! Token received.");
               console.log("Using existing socket. Socket ID:", socket.id);
 
-              // 나의 회원 정보 요청해 localStorage에 저장
+              // (#1-5) 8080서버로 나의 회원 정보 요청
               fetch(`http://${apiServerUrl}:8080/v1/member`, {
                 headers: {
                   Authorization: `Bearer ${jwtToken}`, // Include JWT token in header
@@ -507,14 +511,16 @@
               })
                 .then((response) => response.json())
                 .then((data) => {
+                  // (#1-6) 8080서버로부터 나의 회원 정보 정상 응답 받음
                   if (data.isSuccess && data.result) {
+                    // (#1-7) localStorage에 나의 회원 정보 저장
                     localStorage.setItem("profileImg", data.result.profileImg);
                     localStorage.setItem("name", data.result.name);
                   }
                 })
                 .catch((error) => console.error("Error:", error));
 
-              // 3000 서버로 api 요청(소켓 초기화를 위함)
+              // (#1-8) 3000서버로 login api 요청 (소켓 초기화를 위함)
               fetch("/login", {
                 method: "POST",
                 headers: {

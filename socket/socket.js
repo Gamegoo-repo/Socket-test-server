@@ -24,20 +24,19 @@ function initializeSocket(server) {
     const token = socket.handshake.auth.token;
 
     if (token) {
-      // 토큰 검증
+      // (#2-2) jwt 토큰 검증 및 socket 바인딩
       jwt.verify(token, jwtSecret, (err, decoded) => {
         if (err) {
           console.log("Invalid token");
-          // socket.disconnect();
         } else {
           socket.memberId = decoded.memberId; // 해당 소켓 객체에 memberId 추가
           socket.token = token; // 해당 소켓 객체에 token 추가
           console.log("a user connected, memberId:", socket.memberId, "socketId:", socket.id);
 
-          // "member-info" event emit
+          // (#2-3) "member-info" event emit
           emitMemberInfo(socket);
 
-          // 초기화 함수들 호출
+          // (#2-5) 초기화 함수들 호출
           initChat(socket, io);
           initAlarm(socket, io);
           initMatching(socket, io);
