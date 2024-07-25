@@ -7,7 +7,6 @@ module.exports = (io) => {
 
   const { login } = require("../controller/loginController")(io); // io 객체를 전달
   const { logout } = require("../controller/logoutController")(io);
-  const { notifyChatroomEnter } = require("../controller/chatroomNotifyController")(io);
 
   router.get("/", (req, res) => {
     res.sendFile(join(__dirname, "../../public/index.html"));
@@ -18,8 +17,6 @@ module.exports = (io) => {
   router.post("/login", login);
 
   router.post("/logout", logout);
-
-  //router.post("/notify/chatroom/enter", notifyChatroomEnter);
 
   return router;
 };
