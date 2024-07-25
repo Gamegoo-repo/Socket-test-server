@@ -16,11 +16,6 @@ function emitChatMessage(socket, chatroomUuid, data) {
   socket.emit("my-message-broadcast-success", formatResponse("my-message-broadcast-success", data));
 }
 
-function emitUnreadCountUpdate(socket, chatroomUuid) {
-  socket.emit("unread-count-update", formatResponse("unread-count-update", { chatroomUuid, newCount: 0 }));
-}
-
 module.exports = {
   emitChatMessage,
-  emitUnreadCountUpdate,
 };
